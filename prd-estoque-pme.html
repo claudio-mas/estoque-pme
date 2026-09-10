@@ -411,7 +411,7 @@ footer{
         <ul class="out">
           <li>Sugestão de compra e produção por SKU<span>Exige item, unidade, lead time de fornecedor, lote mínimo e estoque de segurança — é um MRP, outro produto. A linha divisória: a v1 diz <b>quanto</b> em reais (RF-26 e RF-27), nunca <b>o quê</b> nem <b>quando</b></span></li>
           <li>Controle de lote, validade e FEFO<span>Operacional e diário; depende de integração com o chão de fábrica</span></li>
-          <li>Integração direta com ERP<span>O parque de ERPs da PME é fragmentado; a v1 entra por planilha para reduzir o tempo até o primeiro valor</span></li>
+          <li>Integração direta com ERP<span>A v1 lê o balancete e o razão que o ERP já exporta. A parte difícil é o mapeamento do plano de contas, que existe nos dois caminhos — a integração resolveria só o transporte</span></li>
           <li>Custeio e formação de custo padrão<span>O produto consome o custo apurado, não o apura</span></li>
           <li>Multimoeda e consolidação de grupo econômico</li>
         </ul>
@@ -575,7 +575,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 e P2 estão confirmadas</b>; as demais ainda precisam de validação antes do desenvolvimento, e P3 é a única remanescente que altera o produto, não só a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1, P2 e P3 estão confirmadas</b>; P4 a P7 ainda precisam de validação antes do desenvolvimento, e nenhuma delas altera o produto — apenas a implementação.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
@@ -588,9 +588,9 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <p class="risk"><b>Efeito</b> Amplia a coleta de dados no onboarding em uma coluna de receita e dois parâmetros por cenário — custo baixo diante de fechar duas das cinco perguntas do brief e habilitar o alerta de limite de crédito.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P3</span> A entrada de dados é por planilha, não por ERP</h4>
-        <p>Importação de CSV/XLSX em modelo fornecido, mais edição manual. Integração com ERP fica para a v2, guiada pelo que os primeiros clientes de fato usam.</p>
-        <p class="risk"><b>Risco</b> Atrito recorrente todo mês. Mitigado por importação idempotente e memória do mapeamento de colunas.</p>
+        <h4><span class="n">P3</span> A entrada é o que o ERP já exporta, não um modelo nosso<span class="pri">Confirmada</span></h4>
+        <p>A v1 lê o <b>balancete</b> e o <b>razão das contas de estoque</b> no formato em que o ERP os exporta, e resolve a semântica dentro do produto, mapeando o plano de contas do cliente para MP, PP e PA (RF-28). A origem natural do dado não é o módulo de estoque — a divisão em três níveis é classificação contábil, e o balancete mensal é o artefato mais universal da contabilidade de PME brasileira. Integração direta com ERP continua na v2.</p>
+        <p class="risk"><b>Efeito</b> A parte difícil do problema é o mapeamento do plano de contas, não o transporte do arquivo — e ela existe nos dois caminhos. Resolver planilha primeiro obriga a enfrentá-la antes; depois disso, acrescentar transporte é incremental. Falta um teste antes de construir o importador: pegar um balancete real e cronometrar quanto leva até a primeira projeção.</p>
       </div>
       <div class="assump">
         <h4><span class="n">P4</span> PME apresentado em dias reais (d = 30)</h4>
@@ -623,12 +623,14 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <p class="lede">Prioridade <span class="pri">Essencial</span> para o que bloqueia o lançamento e <span class="pri s">Desejável</span> para o que pode entrar na sequência.</p>
 
     <div class="epic">E1 · Dados de entrada</div>
-    <div class="rf"><div class="rf-id">RF-01</div><div><div class="rf-t">Importar histórico por planilha modelo em CSV ou XLSX, com período, nível, saldo, custo de materiais, CMV e receita.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Arquivo de 12 meses importa em menos de 60 s; linhas inválidas são listadas com número da linha e motivo, sem abortar o lote.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-01</div><div><div class="rf-t">Importar balancete e razão das contas de estoque no formato em que o ERP os exporta, com vários períodos por arquivo e vários arquivos numa só operação.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O cliente não transpõe nada à mão — o produto lê o arquivo como veio e o mapeamento resolve a semântica (RF-28). Doze meses entram numa operação, em menos de 60 s. Linhas inválidas são listadas com número da linha e motivo, sem abortar o lote. Um modelo de planilha em branco permanece disponível como saída de emergência para quem não consegue exportar o balancete, nunca como caminho principal.</div></div></div>
     <div class="rf"><div class="rf-id">RF-02</div><div><div class="rf-t">Lançar e editar dados manualmente por período e nível.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Edição de uma célula recalcula PME, projeção e indicadores sem recarregar a página.</div></div></div>
     <div class="rf"><div class="rf-id">RF-03</div><div><div class="rf-t">Validar consistência: período faltante, saldo negativo, custo zerado com estoque positivo, salto atípico de saldo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Cada inconsistência gera um aviso navegável até a célula de origem e pode ser dispensada com justificativa.</div></div></div>
     <div class="rf"><div class="rf-id">RF-04</div><div><div class="rf-t">Reabrir período fechado e recalcular em cascata, preservando registro de auditoria.<span class="pri">Desejável</span></div><div class="rf-a"><b>Aceite</b> Cenários congelados não se alteram na reabertura; o backtesting passa a apontar a divergência.</div></div></div>
     <div class="rf"><div class="rf-id">RF-05</div><div><div class="rf-t">Reimportar o mesmo arquivo sem duplicar lançamentos.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A chave período + nível é substituída, não somada; o resumo mostra quantas linhas foram criadas e quantas atualizadas.</div></div></div>
-    <div class="rf"><div class="rf-id">RF-24</div><div><div class="rf-t">Registrar de qual sistema o arquivo importado foi exportado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Campo obrigatório na primeira importação de cada empresa e reaproveitado nas seguintes, com lista de ERPs conhecidos mais entrada livre. Um relatório interno consolida a distribuição — é o que define a fila de integrações da v2 por dado, e não por opinião. Só tem valor se existir desde o primeiro cliente.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-24</div><div><div class="rf-t">Manter perfis de importação por sistema de origem e registrar a origem a cada importação.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O perfil guarda o layout de exportação já conhecido de cada ERP, de modo que o segundo cliente do mesmo ERP importe sem reconfigurar nada. O campo de origem é obrigatório na primeira importação de cada empresa, com lista de ERPs conhecidos mais entrada livre, e um relatório interno consolida a distribuição — é o que define a fila de integrações da v2 por dado, e não por opinião. Só tem valor se existir desde o primeiro cliente.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-28</div><div><div class="rf-t">Mapear as contas do plano de contas do cliente para MP, PP, PA, CMV e receita, guardando o mapeamento por empresa.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> É a parte difícil do problema e não desaparece com integração de ERP — por isso é resolvida na v1. O produto propõe a classificação por código e nome de conta; o gestor confirma. Feito uma vez por empresa e reaproveitado nas importações seguintes; conta nova entra como pendente e nunca é classificada em silêncio; o mapeamento é editável e auditável, e alterá-lo recalcula o histórico afetado.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-29</div><div><div class="rf-t">Derivar o custo de materiais do razão da conta de MP e confrontá-lo com o valor informado quando houver os dois.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> <span class="mono">Consumo = MP_inicial + Compras − MP_final</span> — a identidade do RF-26 lida ao contrário. Custo de materiais não é linha de balancete nem de DRE: digitado à mão, erra o PME de MP e contamina o teto de compra sem que nada acuse. Divergência acima do limite configurado (padrão 2%) gera aviso navegável, e a memória de cálculo mostra qual origem foi usada.</div></div></div>
 
     <div class="epic">E2 · Apuração histórica</div>
     <div class="rf"><div class="rf-id">RF-06</div><div><div class="rf-t">Calcular PME por nível e por período, indicando se usou estoque médio ou saldo final.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A célula expõe a memória de cálculo com os valores que a compuseram.</div></div></div>
@@ -681,15 +683,16 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">10</div>
   <div>
     <h2>Onboarding</h2>
-    <p class="lede">O caminho até o primeiro valor tem sete passos e uma meta: menos de 30 minutos, sem suporte humano.</p>
+    <p class="lede">O caminho até o primeiro valor tem oito passos e uma meta: menos de 30 minutos, sem suporte humano.</p>
     <ul class="plain">
       <li><b>1 · Cadastrar a empresa</b><span>Ramo, porte e limite de crédito disponível — este último alimenta o alerta de NCG.</span></li>
-      <li><b>2 · Baixar a planilha modelo</b><span>Colunas fixas, uma aba, exemplo preenchido na primeira linha.</span></li>
-      <li><b>3 · Importar o histórico</b><span>Mínimo aceitável de 3 meses, com aviso explícito de baixa confiança; recomendado 12, para capturar sazonalidade.</span></li>
-      <li><b>4 · Revisar os PMEs apurados</b><span>Momento de maior valor percebido: o gestor costuma ver pela primeira vez quantos dias de insumo carrega.</span></li>
-      <li><b>5 · Aceitar ou ajustar as premissas</b><span>O sistema propõe a média de 3 meses; o gestor sobrescreve o que conhecer melhor.</span></li>
-      <li><b>6 · Ler a projeção de 12 meses</b><span>Curva de capital imobilizado, pico de NCG e alertas ativos.</span></li>
-      <li><b>7 · Criar o cenário alternativo</b><span>É o passo que separa o produto da planilha — e a métrica de ativação real.</span></li>
+      <li><b>2 · Exportar balancete e razão do ERP</b><span>Os mesmos arquivos que a contabilidade já gera no fechamento. Nenhuma transposição manual para um formato nosso.</span></li>
+      <li><b>3 · Importar o histórico</b><span>Todos os períodos numa operação. Mínimo aceitável de 3 meses, com aviso explícito de baixa confiança; recomendado 12, para capturar sazonalidade.</span></li>
+      <li><b>4 · Confirmar o mapeamento de contas</b><span>O produto propõe a classificação em MP, PP, PA, CMV e receita; o gestor confirma. É o único passo que exige julgamento contábil, e o único que não se repete no mês seguinte.</span></li>
+      <li><b>5 · Revisar os PMEs apurados</b><span>Momento de maior valor percebido: o gestor costuma ver pela primeira vez quantos dias de insumo carrega.</span></li>
+      <li><b>6 · Aceitar ou ajustar as premissas</b><span>O sistema propõe a média de 3 meses para o PME e a taxa de crescimento para os custos; o gestor sobrescreve o que conhecer melhor.</span></li>
+      <li><b>7 · Ler a projeção de 12 meses</b><span>Curva de capital imobilizado, tetos de compra e produção, pico de NCG e alertas ativos.</span></li>
+      <li><b>8 · Criar o cenário alternativo</b><span>É o passo que separa o produto da planilha — e a métrica de ativação real.</span></li>
     </ul>
   </div>
 </section>
@@ -735,7 +738,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1 e P2 confirmadas; P3–P7 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P3 confirmadas; P4–P7 pendentes de validação.
 </footer>
 
 </div>

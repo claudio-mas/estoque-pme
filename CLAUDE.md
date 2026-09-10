@@ -33,7 +33,8 @@ cycle and working-capital requirement, purchase and production budget ceilings, 
 sensitivity on PME, backtesting, XLSX/PDF export, multi-company access.
 
 Out of scope for v1 (deliberate — see D1): per-SKU purchase/production suggestion (that is an MRP), lot/expiry/FEFO
-control, direct ERP integration (v2; v1 ingests spreadsheets), costing and standard-cost formation, multi-currency.
+control, direct ERP integration (v2; v1 ingests the client's own balancete/razão exports), costing and
+standard-cost formation, multi-currency.
 
 ## Domain model
 
@@ -51,7 +52,9 @@ aggregate calculation must treat an absent level as a deliberate absence, never 
 missing data to be imputed.
 
 Entities: `Empresa` → `Período` (month) → `Lançamento` (balance per level, custo de materiais, CMV, receita).
-On top of those sit `Cenário` and `Premissa` (projected PME, cost projection method, PMR, PMP, loss %).
+On top of those sit `Cenário` and `Premissa` (projected PME, cost projection method, PMR, PMP, loss %). Each
+`Empresa` also owns a `MapeamentoDeContas` — chart-of-accounts codes to MP/PP/PA/CMV/receita — which every
+import passes through (D3, RF-28); it is versioned, because changing it recalculates history.
 
 ## Calculation model
 
@@ -101,6 +104,16 @@ stated at the cost of finished production, carries no unit quantities, and **doe
 `Estoque_médio` = (opening balance + closing balance) / 2, falling back to the closing balance when no opening
 balance exists — and the report must say which one it used (D5).
 
+**`Custo_Materiais` usually has to be derived, not read.** It is neither a balancete line nor a DRE line. Back
+it out of the MP account's razão with the same identity RF-26 uses forwards:
+
+```
+Custo_Materiais = MP_inicial + Compras - MP_final
+```
+
+Entered by hand instead, it corrupts `PME_MP` and therefore `Compras_teto` with nothing to flag it — hence
+RF-29, which derives it where the razão exists and warns when the derived and entered figures diverge.
+
 Projection methods: last realized value with a fixed growth rate, last observation, simple mean of last N,
 weighted mean, linear trend, same month last year (seasonal), manual. Default is the growth rate for the cost
 lines — that is what the reference model actually does — and the 3-month mean for PME, with a warning when
@@ -127,9 +140,9 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D8)
 
-These closed the PRD draft and constrain implementation. **D1, D2 and D8 are confirmed; the rest are pending
-stakeholder validation.** D3 is the only one still open that changes the product itself rather than just the
-implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
+These closed the PRD draft and constrain implementation. **D1, D2, D3 and D8 are confirmed; D4–D7 are pending
+stakeholder validation**, and none of those four changes the product itself — only the implementation. They
+appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
@@ -141,17 +154,23 @@ implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — i
    vs. sales, working-capital requirement) cannot be answered from cost and CMV alone, so `receita` is an
    input and PMR/PMP are scenario parameters (PRD RF-25), overridable per period. They are entered by the
    manager — this is explicitly **not** accounts-receivable/payable modelling.
-3. **D3 — Spreadsheet ingestion, not ERP.** CSV/XLSX import against a supplied template, plus manual entry.
-   Import must be idempotent on the `período + nível` key.
+3. **D3 — Ingest what the ERP already exports, not a template of ours.** *Confirmed.* v1 reads the client's
+   **balancete** and the **razão of the inventory accounts** in whatever CSV/XLSX shape the ERP produces, and
+   resolves meaning in-product by mapping the client's chart of accounts to MP/PP/PA (RF-28). The three-level
+   split is an accounting classification, so the balancete — not the inventory module — is the natural source,
+   and it is the one artifact every Brazilian SME produces monthly regardless of ERP. A blank template survives
+   only as an escape hatch. Direct ERP integration stays in v2: the hard part is account semantics, not
+   transport, and it has to be solved either way. Import stays idempotent on the `período + nível` key.
 4. **D4 — PME presented in real days (d = 30)**, not the reference model's 360-over-monthly-flow.
 5. **D5 — Average inventory by default**, degrading to closing balance when no opening balance exists.
 6. **D6 — PP is optional**, per the domain note above.
 7. **D7 — Loss is a parametric percentage** applied to consumption per level. The product quantifies the cost
    of waste; it does not prevent it operationally.
-8. **D8 — The importer records which system each file was exported from.** *Confirmed.* Required on a
-   company's first import, reused afterwards (PRD RF-24). Which ERPs the first customers actually run cannot
-   be known in advance, so the v2 integration queue is settled by accumulated data rather than opinion — which
-   only works if the field exists from the first customer onward.
+8. **D8 — The importer keeps a profile per source system and records the origin of every import.** *Confirmed.*
+   The profile holds the export layout already known for that ERP, so the second client on the same ERP imports
+   with no reconfiguration; the origin field is required on a company's first import (PRD RF-24). Which ERPs
+   the first customers actually run cannot be known in advance, so the v2 integration queue is settled by
+   accumulated data rather than opinion — which only works if this exists from the first customer onward.
 
 ## Open questions blocking the final PRD
 
