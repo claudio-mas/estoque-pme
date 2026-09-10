@@ -1,0 +1,15 @@
+Estou avaliando implementar um micro-SaaS de planejamento financeiro e orçamentário de estoque para pequenas e médias empresas do ramo alimentício, utilizando como base a imagem estoque.webp. O core do produto seria projetar o valor do estoque de uma empresa nos próximos meses a partir de dados históricos, previsão de custos e prazos médios de permanência dos itens em estoque.
+
+O ponto central é dividir o estoque industrial em três níveis:
+
+* MP — Matérias-Primas: materiais comprados que ainda serão utilizados na produção.
+* PP — Produtos em Processo: itens que já entraram no processo produtivo, mas ainda não estão acabados.
+* PA — Produtos Acabados: itens concluídos, aguardando venda/expedição.
+
+Esse tipo de planejamento permite responder perguntas como: quanto dinheiro ficará imobilizado em estoque nos próximos meses?, quanto de matéria-prima precisaremos financiar?, o estoque está crescendo mais rapidamente que as vendas?, há excesso de estoque? e qual será a necessidade de capital de giro?
+
+Nesse caso, o valor percebido tende a estar em reduzir perdas, evitar falta de insumos e dizer quanto comprar e produzir.
+
+Este sistema deve ser parametrizável, e oferecer cenários para o gestor.
+
+Quais informações ainda são necessárias para elaborar o PRD?

@@ -1,0 +1,718 @@
+<title>Planejamento de Estoque PME</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F5F6F8;
+  --surface:#FFFFFF;
+  --surface-2:#EAEDF2;
+  --ink:#0F151E;
+  --ink-2:#4A5566;
+  --ink-3:#727D8D;
+  --rule:#DCE0E8;
+  --rule-strong:#C0C7D3;
+  --accent:#1B4B9E;
+  --accent-2:#3E6FC4;
+  --accent-soft:#E7EDF8;
+  --flag:#8A5411;
+  --flag-soft:#F9F1E4;
+  --flag-rule:#DFC395;
+  --deep:#101A2A;
+  --deep-ink:#D9E2F1;
+  --deep-dim:#8FA3C0;
+  --deep-rule:#26344A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1117;
+    --surface:#141A23;
+    --surface-2:#1B232E;
+    --ink:#E6EBF2;
+    --ink-2:#99A4B3;
+    --ink-3:#7C8797;
+    --rule:#26303C;
+    --rule-strong:#38434F;
+    --accent:#82AAEE;
+    --accent-2:#9DBEF3;
+    --accent-soft:#18222F;
+    --flag:#D8A765;
+    --flag-soft:#221C12;
+    --flag-rule:#4C3B22;
+    --deep:#080D15;
+    --deep-ink:#C9D5E6;
+    --deep-dim:#7C8EA8;
+    --deep-rule:#1E2A3C;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1117;
+  --surface:#141A23;
+  --surface-2:#1B232E;
+  --ink:#E6EBF2;
+  --ink-2:#99A4B3;
+  --ink-3:#7C8797;
+  --rule:#26303C;
+  --rule-strong:#38434F;
+  --accent:#82AAEE;
+  --accent-2:#9DBEF3;
+  --accent-soft:#18222F;
+  --flag:#D8A765;
+  --flag-soft:#221C12;
+  --flag-rule:#4C3B22;
+  --deep:#080D15;
+  --deep-ink:#C9D5E6;
+  --deep-dim:#7C8EA8;
+  --deep-rule:#1E2A3C;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-size:17.5px;
+  line-height:1.62;
+  padding-inline:clamp(16px,4.5vw,56px);
+  padding-block:clamp(32px,6vw,72px) 96px;
+  -webkit-font-smoothing:antialiased;
+}
+.doc{max-width:1060px;margin-inline:auto}
+
+/* ---------- shared type ---------- */
+h1,h2,h3,h4{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--accent);
+}
+p{margin:0 0 .9em}
+.prose{max-width:66ch}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent-2);outline-offset:3px;border-radius:2px}
+
+/* ---------- masthead ---------- */
+.mast{border-top:3px solid var(--ink);padding-top:20px;margin-bottom:14px}
+.mast h1{
+  font-size:clamp(2.1rem,5.6vw,3.5rem);font-weight:700;letter-spacing:-.028em;
+  line-height:1.03;margin:14px 0 0;
+}
+.mast .deck{
+  font-size:clamp(1.02rem,2.1vw,1.22rem);color:var(--ink-2);max-width:56ch;
+  margin-top:14px;line-height:1.5;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:0 26px;row-gap:10px;
+  margin-top:26px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;font-size:.73rem;
+}
+.meta div{display:flex;gap:7px;align-items:baseline}
+.meta dt{color:var(--ink-3);text-transform:uppercase;letter-spacing:.09em}
+.meta dd{margin:0;color:var(--ink);font-weight:500}
+
+/* ---------- toc ---------- */
+.toc{
+  margin:34px 0 0;padding:20px 22px;background:var(--surface);
+  border:1px solid var(--rule);border-radius:3px;
+}
+.toc ol{
+  list-style:none;margin:10px 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:7px 26px;
+  counter-reset:toc;
+}
+.toc li{counter-increment:toc;font-size:.9rem}
+.toc li a{
+  display:flex;gap:9px;text-decoration:none;color:var(--ink);
+  border-bottom:1px solid transparent;padding-block:1px;
+}
+.toc li a:hover{color:var(--accent);border-bottom-color:var(--rule-strong)}
+.toc li a::before{
+  content:counter(toc,decimal-leading-zero);
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.72rem;color:var(--accent);flex:none;padding-top:.28em;
+}
+
+/* ---------- sections ---------- */
+section{
+  display:grid;grid-template-columns:76px minmax(0,1fr);gap:30px;
+  margin-top:56px;padding-top:22px;border-top:1px solid var(--rule-strong);
+  scroll-margin-top:16px;
+}
+.rail{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.78rem;font-weight:500;color:var(--accent);padding-top:.35em;
+}
+section > h2{
+  font-size:1.5rem;font-weight:600;letter-spacing:-.018em;margin-bottom:14px;
+}
+h3{
+  font-size:.96rem;font-weight:600;letter-spacing:.005em;
+  margin:30px 0 10px;color:var(--ink);
+}
+h3:first-of-type{margin-top:22px}
+.lede{font-size:1.06rem;color:var(--ink-2);max-width:62ch;margin-bottom:6px}
+
+/* ---------- levels ---------- */
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin:18px 0 6px}
+.level{background:var(--surface);padding:16px 17px}
+.level .tag{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:1.05rem;font-weight:600;color:var(--accent);letter-spacing:.02em;
+}
+.level .name{font-family:"Archivo",sans-serif;font-size:.83rem;font-weight:600;
+  margin-top:2px;color:var(--ink)}
+.level p{font-size:.9rem;color:var(--ink-2);margin:9px 0 0;line-height:1.5}
+.level .driver{
+  margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule-strong);
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);
+}
+.level .driver b{display:block;color:var(--ink);letter-spacing:.02em;
+  text-transform:none;font-size:.82rem;font-weight:500;margin-top:3px}
+
+/* ---------- formula slab ---------- */
+.slab{
+  background:var(--deep);color:var(--deep-ink);border-radius:4px;
+  padding:clamp(20px,3vw,30px);margin:20px 0 8px;
+}
+.slab-group + .slab-group{margin-top:24px;padding-top:22px;border-top:1px solid var(--deep-rule)}
+.slab-group h4{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.68rem;font-weight:500;text-transform:uppercase;letter-spacing:.15em;
+  color:var(--deep-dim);margin-bottom:13px;
+}
+.slab code{
+  display:block;font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.83rem;line-height:2;white-space:pre;overflow-x:auto;
+}
+.slab .op{color:var(--deep-dim)}
+.slab-note{
+  margin-top:22px;padding-top:18px;border-top:1px solid var(--deep-rule);
+  font-size:.92rem;color:var(--deep-dim);max-width:64ch;line-height:1.55;
+}
+.slab-note b{color:var(--deep-ink);font-weight:600}
+
+/* ---------- tables ---------- */
+.table-scroll{overflow-x:auto;margin:18px 0 8px;border:1px solid var(--rule);background:var(--surface)}
+table{width:100%;border-collapse:collapse;
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;font-size:.76rem}
+caption{
+  caption-side:bottom;text-align:left;padding:11px 14px;
+  font-family:"Newsreader",serif;font-size:.88rem;color:var(--ink-2);
+  border-top:1px solid var(--rule);line-height:1.5;
+}
+th,td{padding:7px 13px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:170px}
+thead th{
+  font-weight:500;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--ink-3);border-bottom:1px solid var(--rule-strong);padding-bottom:8px;
+}
+thead th.proj{color:var(--accent)}
+td.proj,th.proj{background:var(--accent-soft)}
+tbody tr:not(.grp) td{border-bottom:1px solid var(--rule)}
+tr.grp td{
+  padding-top:16px;font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--ink-3);font-weight:500;
+}
+tr.total td{font-weight:600;color:var(--ink);border-top:1px solid var(--rule-strong);border-bottom:none}
+tbody td:first-child{color:var(--ink-2)}
+tr.total td:first-child{color:var(--ink)}
+
+/* ---------- scope ---------- */
+.scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px;margin-top:18px}
+.scope h3{margin-top:0}
+.scope ul{list-style:none;margin:0;padding:0}
+.scope li{font-size:.95rem;line-height:1.5;padding:9px 0;border-top:1px solid var(--rule)}
+.scope li span{color:var(--ink-2);display:block;font-size:.87rem;margin-top:2px}
+.scope .in li{padding-left:16px;position:relative}
+.scope .in li::before{
+  content:"";position:absolute;left:0;top:16px;width:6px;height:6px;
+  background:var(--accent);border-radius:50%;
+}
+.scope .out li{padding-left:16px;position:relative;color:var(--ink-2)}
+.scope .out li::before{
+  content:"";position:absolute;left:0;top:18px;width:7px;height:1px;background:var(--rule-strong);
+}
+
+/* ---------- assumptions ---------- */
+.assumps{display:grid;gap:12px;margin-top:18px}
+.assump{
+  background:var(--flag-soft);border-left:3px solid var(--flag-rule);
+  padding:14px 18px;border-radius:0 3px 3px 0;
+}
+.assump h4{
+  font-size:.92rem;font-weight:600;margin-bottom:5px;
+  display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+}
+.assump h4 .n{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.7rem;color:var(--flag);font-weight:500;
+}
+.assump p{font-size:.93rem;color:var(--ink-2);margin:0;line-height:1.52}
+.assump .risk{
+  margin-top:7px;font-size:.87rem;color:var(--ink-2);
+}
+.assump .risk b{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--flag);
+  font-weight:500;margin-right:6px;
+}
+
+/* ---------- requirements ---------- */
+.epic{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.13em;
+  color:var(--ink-3);margin:30px 0 2px;
+}
+.epic:first-of-type{margin-top:20px}
+.rf{
+  display:grid;grid-template-columns:72px minmax(0,1fr);gap:0 18px;
+  padding:13px 0;border-top:1px solid var(--rule);
+}
+.rf-id{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.74rem;color:var(--accent);padding-top:.24em;
+}
+.rf-t{font-size:.97rem;line-height:1.45}
+.rf-a{font-size:.88rem;color:var(--ink-2);margin-top:4px;line-height:1.5}
+.rf-a b{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);
+  font-weight:500;margin-right:6px;
+}
+.pri{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;
+  padding:2px 6px;border-radius:2px;margin-left:8px;vertical-align:2px;
+  background:var(--accent-soft);color:var(--accent);white-space:nowrap;
+}
+.pri.s{background:var(--surface-2);color:var(--ink-3)}
+
+/* ---------- plain lists ---------- */
+ul.plain{list-style:none;margin:14px 0 0;padding:0}
+ul.plain > li{
+  font-size:.97rem;line-height:1.55;padding:11px 0;border-top:1px solid var(--rule);
+}
+ul.plain > li b{font-weight:600}
+ul.plain > li span{display:block;color:var(--ink-2);font-size:.9rem;margin-top:2px}
+
+/* ---------- metrics ---------- */
+.metrics{display:grid;gap:0;margin-top:16px}
+.metric{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:baseline;
+  padding:12px 0;border-top:1px solid var(--rule);
+}
+.metric .m-n{font-size:.97rem}
+.metric .m-n span{display:block;color:var(--ink-2);font-size:.87rem;margin-top:1px}
+.metric .m-v{
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.86rem;font-weight:500;color:var(--accent);white-space:nowrap;
+  font-variant-numeric:tabular-nums;text-align:right;
+}
+
+/* ---------- open questions ---------- */
+ol.q{margin:16px 0 0;padding:0;list-style:none;counter-reset:q}
+ol.q li{
+  counter-increment:q;position:relative;padding:12px 0 12px 40px;
+  border-top:1px solid var(--rule);font-size:.97rem;line-height:1.5;
+}
+ol.q li::before{
+  content:"Q" counter(q);position:absolute;left:0;top:14px;
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.72rem;color:var(--flag);
+}
+ol.q li span{display:block;color:var(--ink-2);font-size:.89rem;margin-top:2px}
+
+footer{
+  margin-top:60px;padding-top:18px;border-top:3px solid var(--ink);
+  font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  font-size:.71rem;color:var(--ink-3);line-height:1.7;
+}
+
+@media (max-width:760px){
+  section{grid-template-columns:1fr;gap:6px}
+  .rail{padding-top:0}
+  .rf{grid-template-columns:1fr;gap:3px}
+  .rf-id{padding-top:0}
+  body{font-size:16.5px}
+}
+</style>
+
+<div class="doc">
+
+<header class="mast">
+  <div class="eyebrow">Documento de requisitos · v1</div>
+  <h1>Planejamento de Estoque PME</h1>
+  <p class="deck">Projeção do capital imobilizado em estoque para indústrias de alimentos de pequeno e médio porte, a partir de histórico, previsão de custos e prazo médio de estoque.</p>
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Rascunho para revisão</dd></div>
+    <div><dt>Escopo</dt><dd>v1 — planejamento financeiro</dd></div>
+    <div><dt>Data</dt><dd>Setembro de 2026</dd></div>
+    <div><dt>Base</dt><dd>estoque.txt + estoque.webp</dd></div>
+  </dl>
+</header>
+
+<nav class="toc" aria-label="Sumário">
+  <div class="eyebrow">Sumário</div>
+  <ol>
+    <li><a href="#s1">Contexto e problema</a></li>
+    <li><a href="#s2">Escopo da v1</a></li>
+    <li><a href="#s3">Personas e ciclo de uso</a></li>
+    <li><a href="#s4">Modelo de domínio</a></li>
+    <li><a href="#s5">Modelo de cálculo</a></li>
+    <li><a href="#s6">Exemplo trabalhado</a></li>
+    <li><a href="#s7">Premissas assumidas</a></li>
+    <li><a href="#s8">Requisitos funcionais</a></li>
+    <li><a href="#s9">Requisitos não funcionais</a></li>
+    <li><a href="#s10">Onboarding</a></li>
+    <li><a href="#s11">Métricas de sucesso</a></li>
+    <li><a href="#s12">Riscos e questões</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+  <div class="rail">01</div>
+  <div>
+    <h2>Contexto e problema</h2>
+    <div class="prose">
+      <p class="lede">Na indústria de alimentos, o estoque é o maior consumidor de capital de giro — e a PME o administra por intuição ou por planilha herdada.</p>
+      <p>O gestor compra insumo quando o almoxarifado avisa, produz conforme o pedido entra e descobre o tamanho do estoque quando o contador fecha o mês. A pergunta que ninguém responde antes do fato é <em>quanto dinheiro estará parado em estoque daqui a três meses</em> — e, por consequência, quanto de crédito será preciso tomar, quanto de insumo dá para comprar e se o estoque está crescendo mais rápido que a receita.</p>
+      <p>O produto responde a essa pergunta projetando o valor do estoque por nível (MP, PP, PA) a partir de três entradas que a empresa já possui: histórico de custos e saldos, previsão de custo de materiais e CMV, e uma premissa de prazo médio de permanência. O resultado é uma curva de capital imobilizado mês a mês, comparável entre cenários.</p>
+      <p>O concorrente real não é outro software — é o Excel. A vitória depende de duas coisas que a planilha não faz bem: comparar cenários sem duplicar abas e medir a projeção anterior contra o realizado.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="rail">02</div>
+  <div>
+    <h2>Escopo da v1</h2>
+    <p class="lede">A v1 é uma ferramenta de controladoria: fala em reais, no nível agregado, no ciclo mensal de fechamento.</p>
+    <div class="scope">
+      <div>
+        <h3>Dentro da v1</h3>
+        <ul class="in">
+          <li>Histórico e projeção do valor de estoque por nível MP / PP / PA</li>
+          <li>Cálculo do PME histórico e definição do PME projetado por período</li>
+          <li>Projeção de custo de materiais e CMV por método selecionável ou entrada manual</li>
+          <li>Ciclo financeiro e necessidade de capital de giro<span>PMR e PMP entram como parâmetros, não como modelagem de contas a receber e a pagar</span></li>
+          <li>Cenários comparáveis lado a lado e análise de sensibilidade sobre o PME</li>
+          <li>Indicadores de giro, cobertura em dias e estoque contra receita</li>
+          <li>Backtesting da projeção congelada contra o realizado</li>
+          <li>Exportação para XLSX e relatório de uma página em PDF</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Fora da v1</h3>
+        <ul class="out">
+          <li>Sugestão de compra e produção por SKU<span>Exige item, unidade, lead time de fornecedor, lote mínimo e estoque de segurança — é um MRP, outro produto</span></li>
+          <li>Controle de lote, validade e FEFO<span>Operacional e diário; depende de integração com o chão de fábrica</span></li>
+          <li>Integração direta com ERP<span>O parque de ERPs da PME é fragmentado; a v1 entra por planilha para reduzir o tempo até o primeiro valor</span></li>
+          <li>Custeio e formação de custo padrão<span>O produto consome o custo apurado, não o apura</span></li>
+          <li>Multimoeda e consolidação de grupo econômico</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="rail">03</div>
+  <div>
+    <h2>Personas e ciclo de uso</h2>
+    <ul class="plain">
+      <li><b>Controller ou gerente administrativo-financeiro</b> — persona primária<span>Empresa de 5 a 200 funcionários, faturamento entre R$ 5 e 100 milhões. Fecha o mês, monta o orçamento anual e conversa com o banco. É quem opera o produto.</span></li>
+      <li><b>Sócio-gestor</b> — persona secundária<span>Não opera; consome o resultado para decidir compra, produção e captação. Precisa de uma página, não de uma planilha.</span></li>
+      <li><b>Contabilidade ou consultoria externa</b> — persona terciária<span>Atende várias empresas e é canal natural de distribuição. Exige troca rápida de contexto entre empresas.</span></li>
+    </ul>
+    <div class="prose">
+      <p style="margin-top:22px">O ciclo é <b>mensal</b>, concentrado entre o quinto e o décimo dia útil, quando o fechamento fica pronto — com um pico anual na montagem do orçamento. Isso define a expectativa de retenção: uma conta ativa é a que volta no fechamento seguinte, não a que entra toda semana.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="rail">04</div>
+  <div>
+    <h2>Modelo de domínio</h2>
+    <p class="lede">O estoque industrial é dividido em três níveis, e cada um é planejado contra um direcionador de custo diferente. Essa assimetria é o núcleo do modelo.</p>
+    <div class="levels">
+      <div class="level">
+        <div class="tag">MP</div>
+        <div class="name">Matérias-primas</div>
+        <p>Materiais comprados que ainda serão consumidos na produção.</p>
+        <div class="driver">Direcionador<b>Custo de materiais</b></div>
+      </div>
+      <div class="level">
+        <div class="tag">PP</div>
+        <div class="name">Produtos em processo</div>
+        <p>Itens já iniciados na produção e ainda não acabados.</p>
+        <div class="driver">Direcionador<b>CMV</b></div>
+      </div>
+      <div class="level">
+        <div class="tag">PA</div>
+        <div class="name">Produtos acabados</div>
+        <p>Itens concluídos, aguardando venda ou expedição.</p>
+        <div class="driver">Direcionador<b>CMV</b></div>
+      </div>
+    </div>
+    <div class="prose">
+      <p style="margin-top:20px">Entidades do sistema: <b>Empresa</b> → <b>Período</b> (mês) → <b>Lançamento</b> (saldo por nível, custo de materiais, CMV, receita). Sobre essa base assentam <b>Cenário</b> e <b>Premissa</b> (PME projetado, método de projeção de custo, PMR, PMP, percentual de perda).</p>
+      <p><b>PP é opcional.</b> Boa parte das PMEs alimentícias tem processo curto e não faz apontamento de produtos em processo. O produto precisa funcionar corretamente com dois níveis, sem exigir um número inventado para PP.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="rail">05</div>
+  <div>
+    <h2>Modelo de cálculo</h2>
+    <p class="lede">Uma única relação, usada nas duas direções: do histórico extrai-se o prazo; do prazo estimado projeta-se o estoque.</p>
+
+    <div class="slab">
+      <div class="slab-group">
+        <h4>Direção histórica — apurar o prazo</h4>
+        <code>PME<span class="op">_MP</span> = Estoque_médio_MP <span class="op">/</span> Custo_Materiais <span class="op">×</span> d
+PME<span class="op">_PP</span> = Estoque_médio_PP <span class="op">/</span> CMV             <span class="op">×</span> d
+PME<span class="op">_PA</span> = Estoque_médio_PA <span class="op">/</span> CMV             <span class="op">×</span> d</code>
+      </div>
+      <div class="slab-group">
+        <h4>Direção projetiva — apurar o estoque</h4>
+        <code>MP = Custo_Materiais_prev <span class="op">×</span> PME_MP_prev <span class="op">/</span> d
+PP = CMV_prev             <span class="op">×</span> PME_PP_prev <span class="op">/</span> d
+PA = CMV_prev             <span class="op">×</span> PME_PA_prev <span class="op">/</span> d
+
+Total_Estoque = MP <span class="op">+</span> PP <span class="op">+</span> PA</code>
+      </div>
+      <div class="slab-group">
+        <h4>Derivados</h4>
+        <code>Giro_anualizado  = CMV_12m <span class="op">/</span> Estoque_médio
+Cobertura_dias   = PME_MP <span class="op">+</span> PME_PP <span class="op">+</span> PME_PA
+Ciclo_financeiro = Cobertura_dias <span class="op">+</span> PMR <span class="op">−</span> PMP
+NCG              = Estoque <span class="op">+</span> (Receita <span class="op">×</span> PMR <span class="op">/</span> d) <span class="op">−</span> (Compras <span class="op">×</span> PMP <span class="op">/</span> d)
+Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op">−</span> perda%)</code>
+      </div>
+      <div class="slab-note">
+        <b>Sobre a base temporal.</b> A planilha de referência aplica o fator 360 sobre um fluxo de custo mensal, o que produz PMEs na casa de 200 — números que não são dias de calendário. Como as duas direções são inversas exatas, o fator se cancela e a escolha é de apresentação. A v1 adota <b>d = dias do período (30 no mês)</b>, exibindo o PME em dias reais: 17,8 dias de matéria-prima é um número que o gestor confere contra a própria operação; 207 não é.
+      </div>
+    </div>
+
+    <h3>Definições que precisam ficar explícitas</h3>
+    <ul class="plain">
+      <li><b>Estoque médio</b> = (saldo inicial + saldo final) ÷ 2<span>Quando só houver saldo final disponível, usa-se o saldo final e o relatório sinaliza a substituição. A planilha de referência usa saldo final — conferido: 10.000 ÷ 17.500 × 360 = 205,71.</span></li>
+      <li><b>Métodos de projeção da premissa</b><span>Última observação; média simples dos últimos N; média ponderada; tendência linear; mesmo mês do ano anterior (sazonal); manual. Padrão: média dos últimos 3 meses, com aviso quando a dispersão entre eles passar de 15%.</span></li>
+      <li><b>Perda</b> entra como percentual por nível aplicado ao consumo<span>Cobre a parte financeira da promessa de reduzir perdas. O controle físico de validade e lote fica fora da v1.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="s6">
+  <div class="rail">06</div>
+  <div>
+    <h2>Exemplo trabalhado</h2>
+    <p class="lede">Os números reais são os da planilha de referência, recalculados em dias reais (d = 30). O PME projetado usa a média dos três meses realizados.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">R$ milhares</th>
+            <th scope="col">Jun</th><th scope="col">Jul</th><th scope="col">Ago</th>
+            <th scope="col" class="proj">Set</th><th scope="col" class="proj">Out</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="grp"><td colspan="6">Direcionadores de custo</td></tr>
+          <tr><td>Custo de materiais</td><td>17.500</td><td>18.500</td><td>19.500</td><td class="proj">20.288</td><td class="proj">20.694</td></tr>
+          <tr><td>CMV</td><td>22.500</td><td>23.500</td><td>24.500</td><td class="proj">25.490</td><td class="proj">26.000</td></tr>
+
+          <tr class="grp"><td colspan="6">PME em dias</td></tr>
+          <tr><td>Matérias-primas</td><td>17,1</td><td>17,8</td><td>18,5</td><td class="proj">17,8</td><td class="proj">17,8</td></tr>
+          <tr><td>Produtos em processo</td><td>5,6</td><td>5,7</td><td>6,1</td><td class="proj">5,8</td><td class="proj">5,8</td></tr>
+          <tr><td>Produtos acabados</td><td>16,7</td><td>17,7</td><td>18,4</td><td class="proj">17,6</td><td class="proj">17,6</td></tr>
+
+          <tr class="grp"><td colspan="6">Estoque</td></tr>
+          <tr><td>MP</td><td>10.000</td><td>11.000</td><td>12.000</td><td class="proj">12.047</td><td class="proj">12.288</td></tr>
+          <tr><td>PP</td><td>4.200</td><td>4.500</td><td>5.000</td><td class="proj">4.946</td><td class="proj">5.046</td></tr>
+          <tr><td>PA</td><td>12.500</td><td>13.850</td><td>15.000</td><td class="proj">14.930</td><td class="proj">15.229</td></tr>
+          <tr class="total"><td>Total de estoque</td><td>26.700</td><td>29.350</td><td>32.000</td><td class="proj">31.923</td><td class="proj">32.563</td></tr>
+        </tbody>
+        <caption>Colunas Jun–Ago são realizadas; Set e Out, projetadas. Os totais projetados batem com os da planilha de referência (31.971 e 32.610) com diferença inferior a 0,2% — a divergência vem do método da premissa de PME, não da fórmula.</caption>
+      </table>
+    </div>
+    <div class="prose">
+      <p style="margin-top:18px">A leitura que o gestor tira daqui: o estoque total sai de R$ 26,7 milhões em junho para R$ 32,6 milhões em outubro, um acréscimo de R$ 5,9 milhões de capital imobilizado em cinco meses. Se a receita não cresceu na mesma proporção, isso é caixa preso — e é exatamente o alerta que o produto precisa disparar sem que ninguém peça.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s7">
+  <div class="rail">07</div>
+  <div>
+    <h2>Premissas assumidas</h2>
+    <p class="lede">Decisões tomadas para fechar o rascunho. Cada uma precisa de confirmação antes do desenvolvimento — as três primeiras alteram o produto, não só a implementação.</p>
+    <div class="assumps">
+      <div class="assump">
+        <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU</h4>
+        <p>A v1 opera em valor (R$) sobre MP, PP e PA consolidados. Não há item, quantidade nem preço unitário.</p>
+        <p class="risk"><b>Risco</b> A promessa de "dizer quanto comprar" fica de fora. Se ela for inegociável para o cliente-piloto, o produto é outro e o PRD precisa ser refeito.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P2</span> Receita e ciclo financeiro entram na v1</h4>
+        <p>Duas das cinco perguntas do brief — estoque contra vendas e necessidade de capital de giro — não são respondíveis só com custo e CMV. A v1 acrescenta receita como entrada e PMR/PMP como parâmetros.</p>
+        <p class="risk"><b>Risco</b> Amplia a coleta de dados no onboarding. Se cortado, duas perguntas do brief ficam sem resposta e a promessa precisa ser reescrita.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P3</span> A entrada de dados é por planilha, não por ERP</h4>
+        <p>Importação de CSV/XLSX em modelo fornecido, mais edição manual. Integração com ERP fica para a v2, guiada pelo que os primeiros clientes de fato usam.</p>
+        <p class="risk"><b>Risco</b> Atrito recorrente todo mês. Mitigado por importação idempotente e memória do mapeamento de colunas.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P4</span> PME apresentado em dias reais (d = 30)</h4>
+        <p>Em vez do fator 360 sobre fluxo mensal da planilha de referência. Matematicamente equivalente, mais legível.</p>
+        <p class="risk"><b>Risco</b> Quem vem da planilha estranha a mudança de escala. Mitigado por uma nota de conversão no relatório.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P5</span> Estoque médio como padrão, saldo final como alternativa</h4>
+        <p>O rótulo do modelo de referência diz "estoque médio", mas os números usam o saldo de fechamento. A v1 usa a média e degrada para o saldo final quando não houver saldo inicial.</p>
+        <p class="risk"><b>Risco</b> Baixo. Produz pequena divergência contra a planilha antiga do cliente, que precisa ser explicada na comparação.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P6</span> PP é opcional</h4>
+        <p>Empresas sem apontamento de produtos em processo trabalham com dois níveis, sem penalidade nos indicadores.</p>
+        <p class="risk"><b>Risco</b> Baixo. Exige que todo cálculo agregado trate o nível ausente como zero legítimo, não como dado faltante.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P7</span> A perda é um percentual paramétrico</h4>
+        <p>Aplicado ao consumo por nível, elevando o custo necessário. Não há controle de validade, lote ou FEFO.</p>
+        <p class="risk"><b>Risco</b> A promessa de reduzir perdas fica parcial — o produto quantifica o custo da perda, não a evita operacionalmente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="rail">08</div>
+  <div>
+    <h2>Requisitos funcionais</h2>
+    <p class="lede">Prioridade <span class="pri">Essencial</span> para o que bloqueia o lançamento e <span class="pri s">Desejável</span> para o que pode entrar na sequência.</p>
+
+    <div class="epic">E1 · Dados de entrada</div>
+    <div class="rf"><div class="rf-id">RF-01</div><div><div class="rf-t">Importar histórico por planilha modelo em CSV ou XLSX, com período, nível, saldo, custo de materiais, CMV e receita.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Arquivo de 12 meses importa em menos de 60 s; linhas inválidas são listadas com número da linha e motivo, sem abortar o lote.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-02</div><div><div class="rf-t">Lançar e editar dados manualmente por período e nível.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Edição de uma célula recalcula PME, projeção e indicadores sem recarregar a página.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-03</div><div><div class="rf-t">Validar consistência: período faltante, saldo negativo, custo zerado com estoque positivo, salto atípico de saldo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Cada inconsistência gera um aviso navegável até a célula de origem e pode ser dispensada com justificativa.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-04</div><div><div class="rf-t">Reabrir período fechado e recalcular em cascata, preservando registro de auditoria.<span class="pri">Desejável</span></div><div class="rf-a"><b>Aceite</b> Cenários congelados não se alteram na reabertura; o backtesting passa a apontar a divergência.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-05</div><div><div class="rf-t">Reimportar o mesmo arquivo sem duplicar lançamentos.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A chave período + nível é substituída, não somada; o resumo mostra quantas linhas foram criadas e quantas atualizadas.</div></div></div>
+
+    <div class="epic">E2 · Apuração histórica</div>
+    <div class="rf"><div class="rf-id">RF-06</div><div><div class="rf-t">Calcular PME por nível e por período, indicando se usou estoque médio ou saldo final.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A célula expõe a memória de cálculo com os valores que a compuseram.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-07</div><div><div class="rf-t">Calcular giro anualizado e cobertura em dias.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-08</div><div><div class="rf-t">Comparar a variação de 12 meses do estoque com a da receita.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Responde diretamente à pergunta "o estoque está crescendo mais rápido que as vendas?" com as duas variações percentuais lado a lado.</div></div></div>
+
+    <div class="epic">E3 · Projeção</div>
+    <div class="rf"><div class="rf-id">RF-09</div><div><div class="rf-t">Definir horizonte de projeção entre 3 e 18 meses, padrão 12.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-10</div><div><div class="rf-t">Projetar custo de materiais e CMV por método selecionável por linha, ou por entrada manual.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Métodos disponíveis: última observação, média de N, média ponderada, tendência linear, mesmo mês do ano anterior, manual.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-11</div><div><div class="rf-t">Definir o PME projetado por nível e por período, herdado do método ou sobrescrito à mão.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Toda célula sobrescrita fica visualmente marcada e pode ser revertida ao valor calculado.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-12</div><div><div class="rf-t">Calcular MP, PP, PA e o total projetado para cada período do horizonte.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-13</div><div><div class="rf-t">Aplicar percentual de perda por nível sobre o consumo.<span class="pri">Desejável</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-14</div><div><div class="rf-t">Projetar ciclo financeiro e necessidade de capital de giro a partir de PMR e PMP parametrizados.<span class="pri">Essencial</span></div></div></div>
+
+    <div class="epic">E4 · Cenários</div>
+    <div class="rf"><div class="rf-id">RF-15</div><div><div class="rf-t">Criar cenário clonando as premissas de outro.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O clone é independente: alterar o original não afeta a cópia.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-16</div><div><div class="rf-t">Comparar até três cenários lado a lado em estoque total, NCG e pico de capital imobilizado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A comparação mostra a diferença absoluta e percentual contra o cenário-base, mês a mês.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-17</div><div><div class="rf-t">Analisar sensibilidade variando o PME de um nível em ± X dias.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O resultado é expresso em reais liberados ou consumidos de caixa, não apenas em variação de estoque.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-18</div><div><div class="rf-t">Congelar um cenário como orçamento aprovado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O congelamento é imutável e datado; serve de base para o backtesting.</div></div></div>
+
+    <div class="epic">E5 · Alertas e verificação</div>
+    <div class="rf"><div class="rf-id">RF-19</div><div><div class="rf-t">Disparar alertas de estoque crescendo acima da receita por três meses, cobertura acima do teto definido e pico de NCG acima do limite de crédito informado.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-20</div><div><div class="rf-t">Comparar o cenário congelado com o realizado, apurando erro percentual por nível e por mês.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> É o argumento de renovação do produto: mostra se a projeção anterior acertou.</div></div></div>
+
+    <div class="epic">E6 · Saída e acesso</div>
+    <div class="rf"><div class="rf-id">RF-21</div><div><div class="rf-t">Exportar a projeção para XLSX, com as premissas em aba separada.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-22</div><div><div class="rf-t">Gerar relatório de uma página em PDF para banco ou sócio.<span class="pri">Desejável</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-23</div><div><div class="rf-t">Suportar múltiplas empresas por conta, com troca de contexto e papéis de editor e leitor.<span class="pri">Essencial</span></div></div></div>
+  </div>
+</section>
+
+<section id="s9">
+  <div class="rail">09</div>
+  <div>
+    <h2>Requisitos não funcionais</h2>
+    <ul class="plain">
+      <li><b>Localização</b><span>Interface e dados em português do Brasil, moeda em reais, formato numérico 1.234,56. Períodos por competência mensal.</span></li>
+      <li><b>Desempenho</b><span>Recalcular 18 meses × 3 níveis × 3 cenários em menos de 2 segundos após alteração de premissa.</span></li>
+      <li><b>Auditoria</b><span>Toda alteração de premissa ou de lançamento registra usuário, data/hora e valor anterior. Dado financeiro sem rastro não é defensável perante sócio ou banco.</span></li>
+      <li><b>Isolamento e privacidade</b><span>Separação estrita por locatário, criptografia em repouso e conformidade com a LGPD. Contadores acessam várias empresas sem que os dados se cruzem.</span></li>
+      <li><b>Disponibilidade</b><span>Janela crítica entre o quinto e o décimo dia útil de cada mês; manutenção programada fora dela.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="s10">
+  <div class="rail">10</div>
+  <div>
+    <h2>Onboarding</h2>
+    <p class="lede">O caminho até o primeiro valor tem sete passos e uma meta: menos de 30 minutos, sem suporte humano.</p>
+    <ul class="plain">
+      <li><b>1 · Cadastrar a empresa</b><span>Ramo, porte e limite de crédito disponível — este último alimenta o alerta de NCG.</span></li>
+      <li><b>2 · Baixar a planilha modelo</b><span>Colunas fixas, uma aba, exemplo preenchido na primeira linha.</span></li>
+      <li><b>3 · Importar o histórico</b><span>Mínimo aceitável de 3 meses, com aviso explícito de baixa confiança; recomendado 12, para capturar sazonalidade.</span></li>
+      <li><b>4 · Revisar os PMEs apurados</b><span>Momento de maior valor percebido: o gestor costuma ver pela primeira vez quantos dias de insumo carrega.</span></li>
+      <li><b>5 · Aceitar ou ajustar as premissas</b><span>O sistema propõe a média de 3 meses; o gestor sobrescreve o que conhecer melhor.</span></li>
+      <li><b>6 · Ler a projeção de 12 meses</b><span>Curva de capital imobilizado, pico de NCG e alertas ativos.</span></li>
+      <li><b>7 · Criar o cenário alternativo</b><span>É o passo que separa o produto da planilha — e a métrica de ativação real.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="rail">11</div>
+  <div>
+    <h2>Métricas de sucesso</h2>
+    <div class="metrics">
+      <div class="metric"><div class="m-n">Ativação<span>Contas com ao menos uma projeção completa em 7 dias</span></div><div class="m-v">≥ 60%</div></div>
+      <div class="metric"><div class="m-n">Retenção de ciclo<span>Contas que retornam no fechamento seguinte, no terceiro mês</span></div><div class="m-v">≥ 70%</div></div>
+      <div class="metric"><div class="m-n">Acurácia da projeção<span>Erro percentual absoluto médio do estoque total a 3 meses, medido no backtesting</span></div><div class="m-v">&lt; 12%</div></div>
+      <div class="metric"><div class="m-n">Tempo até o primeiro forecast<span>Mediana, do cadastro à primeira projeção</span></div><div class="m-v">&lt; 30 min</div></div>
+      <div class="metric"><div class="m-n">Uso de cenários<span>Cenários por conta ativa por mês — indicador de que o produto virou ferramenta de decisão</span></div><div class="m-v">≥ 2</div></div>
+    </div>
+    <div class="prose">
+      <p style="margin-top:20px">A acurácia é a métrica que sustenta a renovação: um produto que erra a projeção em 30% vira planilha bonita no segundo mês. Ela só existe se o backtesting (RF-20) for construído desde a v1.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="rail">12</div>
+  <div>
+    <h2>Riscos e questões em aberto</h2>
+
+    <h3>Riscos</h3>
+    <ul class="plain">
+      <li><b>Histórico curto ou sujo</b><span>Sem 12 meses limpos, a projeção é fraca e o cliente abandona na primeira semana. Mitigação: aviso de confiança por nível e preenchimento assistido.</span></li>
+      <li><b>Sazonalidade do setor alimentício</b><span>Média simples quebra em operações com pico sazonal. Mitigação: método de mesmo mês do ano anterior e alerta de dispersão entre períodos.</span></li>
+      <li><b>Volatilidade de commodity</b><span>A previsão de custo de insumo tende a ser a maior fonte de erro da projeção. Mitigação: sensibilidade a preço de insumo, além da sensibilidade a PME.</span></li>
+      <li><b>Ausência de apontamento de PP</b><span>Dado inexistente vira número inventado e contamina o total. Mitigação: tratar o nível como ausente por decisão, nunca como zero silencioso.</span></li>
+      <li><b>O concorrente é o Excel</b><span>A troca só se justifica por cenários comparáveis e backtesting. Uma tabela mais bonita não move ninguém.</span></li>
+    </ul>
+
+    <h3>Questões que bloqueiam a versão final</h3>
+    <ol class="q">
+      <li>A promessa de "dizer quanto comprar e produzir" sai da v1?<span>Se for inegociável para o cliente-piloto, o produto passa a exigir SKU e o escopo muda por completo (ver P1).</span></li>
+      <li>Qual método a coluna "Média" da planilha de referência pretendia usar?<span>Não reconcilia com média simples dos realizados — 17.500, 18.500 e 19.500 dão 18.500, mas a coluna traz 19.890. Confirmar antes de replicar o comportamento.</span></li>
+      <li>PMR e PMP entram na v1 ou a NCG fica para depois?<span>Define se o produto responde à pergunta de capital de giro do brief ou apenas projeta estoque (ver P2).</span></li>
+      <li>Quais ERPs os cinco primeiros clientes usam?<span>Determina a ordem da fila de integrações da v2 e o formato do importador da v1.</span></li>
+      <li>A venda é para a empresa ou para a contabilidade que a atende?<span>Muda preço, empacotamento e a prioridade do requisito de multiempresa.</span></li>
+      <li>Qual o ticket-alvo e o desenho dos planos?<span>Nenhuma decisão de limite — empresas, usuários, horizonte — pode ser tomada antes disso.</span></li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). Premissas P1–P7 pendentes de validação.
+</footer>
+
+</div>
