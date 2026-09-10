@@ -6,7 +6,7 @@
  * fator `d` se cancela no estoque projetado.
  */
 import { DIAS_DO_PERIODO } from './periodo';
-import { media, multiplicarPorTaxa, razao } from './dinheiro';
+import { media, multiplicarPorTaxa, quociente } from './dinheiro';
 import type { BaseEstoque, Centavos, Pme } from './tipos';
 
 export interface EntradaPme {
@@ -47,7 +47,7 @@ export function calcularPme(entrada: EntradaPme): Pme {
   const estoque =
     estoqueAbertura === null ? estoqueFechamento : media([estoqueAbertura, estoqueFechamento]);
 
-  return { estado: 'calculado', dias: razao(estoque, custoDirecionador) * dias, base };
+  return { estado: 'calculado', dias: quociente(estoque, custoDirecionador) * dias, base };
 }
 
 /**

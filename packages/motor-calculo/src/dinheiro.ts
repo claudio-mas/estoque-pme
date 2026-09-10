@@ -2,7 +2,7 @@
  * Aritmética de dinheiro em centavos.
  *
  * `bigint` guarda o valor; `number` só aparece quando o cálculo é genuinamente
- * uma razão (PME em dias, taxa de perda, giro). Toda volta de `number` para
+ * um quociente (PME em dias, taxa de perda, giro). Toda volta de `number` para
  * `Centavos` passa por `arredondarCentavos`, que é o único ponto de
  * arredondamento do motor.
  */
@@ -36,10 +36,10 @@ export function arredondarCentavos(valor: number): Centavos {
   return BigInt(arredondado);
 }
 
-/** Razão entre dois valores monetários. O resultado é adimensional. */
-export function razao(numerador: Centavos, denominador: Centavos): number {
+/** Quociente entre dois valores monetários. O resultado é adimensional. */
+export function quociente(numerador: Centavos, denominador: Centavos): number {
   if (denominador === 0n) {
-    throw new RangeError('Razão com denominador zerado.');
+    throw new RangeError('Quociente com denominador zerado.');
   }
   return paraNumero(numerador) / paraNumero(denominador);
 }

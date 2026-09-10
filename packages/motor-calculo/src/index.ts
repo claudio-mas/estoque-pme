@@ -14,7 +14,7 @@ export {
   media,
   multiplicarPorTaxa,
   paraNumero,
-  razao,
+  quociente,
   somar,
 } from './dinheiro';
 

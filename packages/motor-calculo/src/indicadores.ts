@@ -1,7 +1,7 @@
 /**
  * Indicadores derivados: cobertura, giro, ciclo financeiro, NCG e perda.
  */
-import { multiplicarPorTaxa, razao } from './dinheiro';
+import { multiplicarPorTaxa, quociente } from './dinheiro';
 import { DIAS_DO_PERIODO } from './periodo';
 import type { Centavos, Cobertura, Nivel, Perda, Pme } from './tipos';
 
@@ -34,7 +34,7 @@ export function cobertura(pmes: Readonly<Partial<Record<Nivel, Pme>>>): Cobertur
 
 /** Giro anualizado do estoque. */
 export function giroAnualizado(cmvDoze: Centavos, estoqueMedio: Centavos): number {
-  return razao(cmvDoze, estoqueMedio);
+  return quociente(cmvDoze, estoqueMedio);
 }
 
 /** Ciclo financeiro em dias: cobertura + prazo de recebimento − prazo de pagamento. */
@@ -97,7 +97,7 @@ export function perdaMedida(perdas: Centavos | null, consumo: Centavos): Perda {
   if (perdas === null || consumo === 0n) {
     return { estado: 'naoMedido' };
   }
-  return { estado: 'medido', taxa: razao(perdas, consumo) };
+  return { estado: 'medido', taxa: quociente(perdas, consumo) };
 }
 
 /**

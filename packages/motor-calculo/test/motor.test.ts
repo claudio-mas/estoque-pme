@@ -28,7 +28,7 @@ import {
   porUltimaObservacao,
   producaoTeto,
   projetarEstoque,
-  razao,
+  quociente,
 } from '../src/index';
 import type { Centavos } from '../src/index';
 
@@ -49,8 +49,8 @@ describe('dinheiro', () => {
     expect(() => arredondarCentavos(Number.NaN)).toThrow(RangeError);
   });
 
-  it('recusa razão com denominador zerado em vez de devolver infinito', () => {
-    expect(() => razao(reais(100), 0n)).toThrow(RangeError);
+  it('recusa quociente com denominador zerado em vez de devolver infinito', () => {
+    expect(() => quociente(reais(100), 0n)).toThrow(RangeError);
   });
 
   it('preserva centavos que um float perderia', () => {
@@ -138,7 +138,7 @@ describe('cobertura', () => {
       PA: calculado(17.6),
     });
     expect(total).toMatchObject({ estado: 'calculado', niveis: ['MP', 'PA'] });
-    // Dias é razão, não dinheiro: comparar com tolerância, nunca por igualdade.
+    // Dias é quociente, não dinheiro: comparar com tolerância, nunca por igualdade.
     if (total.estado !== 'calculado') return;
     expect(total.dias).toBeCloseTo(35.4, 10);
   });
