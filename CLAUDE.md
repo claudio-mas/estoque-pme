@@ -1,3 +1,10 @@
+# OpenWolf
+
+This project uses OpenWolf for context management. The always-on rules live in `.claude/rules/openwolf.md`; the hooks handle bookkeeping (anatomy index, memory log, read tracking) automatically.
+
+For the full operating protocol (session handoff, memory discipline, bug logging), load the `openwolf` skill, or read `.wolf/OPENWOLF.md`. Regenerate the session handoff with `/handoff`.
+
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -310,3 +317,17 @@ the product is sold to (D9), and how it is packaged (D10, as a hypothesis).
   (`1.234,56`), currency BRL, periods by monthly competence.
 - Every premise or entry change must record user, timestamp, and prior value. Financial figures without an
   audit trail are not defensible to a partner or a bank.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `claudio-mas/estoque-pme`, driven by the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, each label string equal to its name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repository root. See `docs/agents/domain.md`.
