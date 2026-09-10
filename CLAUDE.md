@@ -114,14 +114,16 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D7)
 
-These closed the PRD draft and constrain implementation. **All are pending stakeholder validation**; D1–D3
-change the product itself, not just the implementation. They appear as P1–P7 in the PRD.
+These closed the PRD draft and constrain implementation. **D2 and D8 are confirmed; the rest are pending
+stakeholder validation.** D1 and D3 change the product itself, not just the implementation. They appear as
+P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** v1 works in R$ over consolidated MP/PP/PA, with no item, quantity,
    or unit price. This is what puts "how much to buy" out of scope; reversing it means redoing the PRD.
-2. **D2 — Revenue and financial cycle are in v1.** Two of the brief's five questions (inventory vs. sales,
-   working-capital requirement) cannot be answered from cost and CMV alone, so `receita` is an input and
-   PMR/PMP are parameters.
+2. **D2 — Revenue and financial cycle are in v1.** *Confirmed.* Two of the brief's five questions (inventory
+   vs. sales, working-capital requirement) cannot be answered from cost and CMV alone, so `receita` is an
+   input and PMR/PMP are scenario parameters (PRD RF-25), overridable per period. They are entered by the
+   manager — this is explicitly **not** accounts-receivable/payable modelling.
 3. **D3 — Spreadsheet ingestion, not ERP.** CSV/XLSX import against a supplied template, plus manual entry.
    Import must be idempotent on the `período + nível` key.
 4. **D4 — PME presented in real days (d = 30)**, not the reference model's 360-over-monthly-flow.
@@ -129,19 +131,22 @@ change the product itself, not just the implementation. They appear as P1–P7 i
 6. **D6 — PP is optional**, per the domain note above.
 7. **D7 — Loss is a parametric percentage** applied to consumption per level. The product quantifies the cost
    of waste; it does not prevent it operationally.
+8. **D8 — The importer records which system each file was exported from.** *Confirmed.* Required on a
+   company's first import, reused afterwards (PRD RF-24). Which ERPs the first customers actually run cannot
+   be known in advance, so the v2 integration queue is settled by accumulated data rather than opinion — which
+   only works if the field exists from the first customer onward.
 
 ## Open questions blocking the final PRD
 
 1. Does "say how much to buy and produce" leave v1? If non-negotiable for the pilot customer, D1 inverts and
    the scope changes completely.
-2. Do PMR and PMP make v1, or does NCG wait? (D2.)
-3. Which ERPs do the first five customers use? Sets the v2 integration queue and the v1 importer's shape.
-4. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
+2. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
    multi-company support.
-5. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+3. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
 
-The former question 2 — what the reference spreadsheet's "Média" column computed — is resolved; the answer is
-in the notes above.
+Three questions have been closed and must not be reopened without new information: what the reference
+spreadsheet's "Média" column computed (answered in the notes above), whether PMR/PMP make v1 (D2), and which
+ERPs to integrate with (D8 replaces the question with a measurement).
 
 ## Conventions
 

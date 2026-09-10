@@ -568,7 +568,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. Cada uma precisa de confirmação antes do desenvolvimento — as três primeiras alteram o produto, não só a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P2 está confirmada</b>; as demais ainda precisam de validação antes do desenvolvimento, e P1 e P3 alteram o produto, não só a implementação.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU</h4>
@@ -576,9 +576,9 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <p class="risk"><b>Risco</b> A promessa de "dizer quanto comprar" fica de fora. Se ela for inegociável para o cliente-piloto, o produto é outro e o PRD precisa ser refeito.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P2</span> Receita e ciclo financeiro entram na v1</h4>
-        <p>Duas das cinco perguntas do brief — estoque contra vendas e necessidade de capital de giro — não são respondíveis só com custo e CMV. A v1 acrescenta receita como entrada e PMR/PMP como parâmetros.</p>
-        <p class="risk"><b>Risco</b> Amplia a coleta de dados no onboarding. Se cortado, duas perguntas do brief ficam sem resposta e a promessa precisa ser reescrita.</p>
+        <h4><span class="n">P2</span> Receita e ciclo financeiro entram na v1<span class="pri">Confirmada</span></h4>
+        <p>Duas das cinco perguntas do brief — estoque contra vendas e necessidade de capital de giro — não são respondíveis só com custo e CMV. A v1 acrescenta receita como entrada e PMR/PMP como parâmetros (RF-25).</p>
+        <p class="risk"><b>Efeito</b> Amplia a coleta de dados no onboarding em uma coluna de receita e dois parâmetros por cenário — custo baixo diante de fechar duas das cinco perguntas do brief e habilitar o alerta de limite de crédito.</p>
       </div>
       <div class="assump">
         <h4><span class="n">P3</span> A entrada de dados é por planilha, não por ERP</h4>
@@ -621,6 +621,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="rf"><div class="rf-id">RF-03</div><div><div class="rf-t">Validar consistência: período faltante, saldo negativo, custo zerado com estoque positivo, salto atípico de saldo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Cada inconsistência gera um aviso navegável até a célula de origem e pode ser dispensada com justificativa.</div></div></div>
     <div class="rf"><div class="rf-id">RF-04</div><div><div class="rf-t">Reabrir período fechado e recalcular em cascata, preservando registro de auditoria.<span class="pri">Desejável</span></div><div class="rf-a"><b>Aceite</b> Cenários congelados não se alteram na reabertura; o backtesting passa a apontar a divergência.</div></div></div>
     <div class="rf"><div class="rf-id">RF-05</div><div><div class="rf-t">Reimportar o mesmo arquivo sem duplicar lançamentos.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A chave período + nível é substituída, não somada; o resumo mostra quantas linhas foram criadas e quantas atualizadas.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-24</div><div><div class="rf-t">Registrar de qual sistema o arquivo importado foi exportado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Campo obrigatório na primeira importação de cada empresa e reaproveitado nas seguintes, com lista de ERPs conhecidos mais entrada livre. Um relatório interno consolida a distribuição — é o que define a fila de integrações da v2 por dado, e não por opinião. Só tem valor se existir desde o primeiro cliente.</div></div></div>
 
     <div class="epic">E2 · Apuração histórica</div>
     <div class="rf"><div class="rf-id">RF-06</div><div><div class="rf-t">Calcular PME por nível e por período, indicando se usou estoque médio ou saldo final.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A célula expõe a memória de cálculo com os valores que a compuseram.</div></div></div>
@@ -634,6 +635,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="rf"><div class="rf-id">RF-12</div><div><div class="rf-t">Calcular MP, PP, PA e o total projetado para cada período do horizonte.<span class="pri">Essencial</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-13</div><div><div class="rf-t">Aplicar percentual de perda por nível sobre o consumo.<span class="pri">Desejável</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-14</div><div><div class="rf-t">Projetar ciclo financeiro e necessidade de capital de giro a partir de PMR e PMP parametrizados.<span class="pri">Essencial</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-25</div><div><div class="rf-t">Definir PMR e PMP como parâmetros do cenário, sobrescrevíveis por período.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> São entrada do gestor, não apuração de contas a receber e a pagar (P2). Alimentam o ciclo financeiro e a NCG do RF-14 e o alerta de limite de crédito do RF-19. Sem eles a projeção para antes da conclusão que interessa ao sócio.</div></div></div>
 
     <div class="epic">E4 · Cenários</div>
     <div class="rf"><div class="rf-id">RF-15</div><div><div class="rf-t">Criar cenário clonando as premissas de outro.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O clone é independente: alterar o original não afeta a cópia.</div></div></div>
@@ -717,8 +719,6 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <h3>Questões que bloqueiam a versão final</h3>
     <ol class="q">
       <li>A promessa de "dizer quanto comprar e produzir" sai da v1?<span>Se for inegociável para o cliente-piloto, o produto passa a exigir SKU e o escopo muda por completo (ver P1).</span></li>
-      <li>PMR e PMP entram na v1 ou a NCG fica para depois?<span>Define se o produto responde à pergunta de capital de giro do brief ou apenas projeta estoque (ver P2).</span></li>
-      <li>Quais ERPs os cinco primeiros clientes usam?<span>Determina a ordem da fila de integrações da v2 e o formato do importador da v1.</span></li>
       <li>A venda é para a empresa ou para a contabilidade que a atende?<span>Muda preço, empacotamento e a prioridade do requisito de multiempresa.</span></li>
       <li>Qual o ticket-alvo e o desenho dos planos?<span>Nenhuma decisão de limite — empresas, usuários, horizonte — pode ser tomada antes disso.</span></li>
     </ol>
@@ -727,7 +727,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). Premissas P1–P7 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P2 confirmada; P1 e P3–P7 pendentes de validação.
 </footer>
 
 </div>
