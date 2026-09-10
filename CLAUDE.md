@@ -149,11 +149,11 @@ dispersion across those months exceeds 15%.
 - Worked example in the PRD reproduces the reference figures at d = 30 and lands within 0,2% of the
   spreadsheet's projected totals — useful as a regression fixture once code exists.
 
-## Decisions taken (D1–D8)
+## Decisions taken (D1–D10)
 
-These closed the PRD draft and constrain implementation. **All of D1–D8 are confirmed** — nothing here is
-still waiting on stakeholder validation, and the only open items left are commercial (see below). They appear
-as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
+These closed the PRD draft and constrain implementation. **D1–D9 are confirmed; D10 is a hypothesis with a
+review trigger, not a validated decision.** They appear as P1–P9 in the PRD (D8 has no P counterpart — it was
+decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
@@ -195,18 +195,33 @@ as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draf
    with no reconfiguration; the origin field is required on a company's first import (PRD RF-24). Which ERPs
    the first customers actually run cannot be known in advance, so the v2 integration queue is settled by
    accumulated data rather than opinion — which only works if this exists from the first customer onward.
+9. **D9 — Sell direct to the company; the accounting firm is a channel, not a user.** *Confirmed.* The
+   accountant does not hold the decision — estimating next quarter's PME depends on harvest, supplier
+   contracts and the production plan, all of which live inside the company. They do hold the historical data
+   and the relationship, which makes them distribution. So: multi-company stays Essencial from day one
+   (RF-23), onboarding is written for the controller, and no per-accountant-seat pricing gets built before
+   there are ten direct customers. Appears as P8 in the PRD.
+10. **D10 — Price per company, three plans.** *Hypothesis, not a validated decision.* Two parts are structural
+    and settled: charge per **empresa**, never per seat, and keep **backtesting in the paid tier**, since it is
+    what sustains renewal. The figures are a starting point only — Essencial (1 company) R$ 300–500/mo;
+    Profissional (3 companies, unlimited scenarios, backtesting) R$ 800–1.200/mo; Contabilidade (10+) from
+    R$ 2.000/mo. **They were set with zero pricing conversations** and carry a review trigger: revisit after 10
+    paying customers or 6 months, whichever comes first. Appears as P9 in the PRD, flagged as a hypothesis.
 
-## Open questions blocking the final PRD
+## Open items
 
-Only commercial questions remain; nothing here blocks building the product.
+No product or commercial question is still open — every decision is recorded as D1–D10 above. Two empirical
+checks remain, and neither blocks building:
 
-1. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
-   multi-company support.
-2. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+1. **The timed balancete test.** Take a real balancete and measure how long it takes to go from file to first
+   projection. The only item that can still change an ingestion requirement before development, and it needs a
+   real file from the pilot customer or their accountant (D3).
+2. **The pricing review.** After 10 paying customers or 6 months, whichever comes first (D10).
 
-Four questions have been closed and must not be reopened without new information: whether "how much to buy"
+Six questions have been closed and must not be reopened without new information: whether "how much to buy"
 stays in v1 (D1), what the reference spreadsheet's "Média" column computed (answered in the notes above),
-whether PMR/PMP make v1 (D2), and which ERPs to integrate with (D8 replaces the question with a measurement).
+whether PMR/PMP make v1 (D2), which ERPs to integrate with (D8 replaces the question with a measurement), who
+the product is sold to (D9), and how it is packaged (D10, as a hypothesis).
 
 ## Conventions
 

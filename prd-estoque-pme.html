@@ -370,7 +370,7 @@ footer{
     <li><a href="#s9">Requisitos não funcionais</a></li>
     <li><a href="#s10">Onboarding</a></li>
     <li><a href="#s11">Métricas de sucesso</a></li>
-    <li><a href="#s12">Riscos e questões</a></li>
+    <li><a href="#s12">Riscos e verificações</a></li>
   </ol>
 </nav>
 
@@ -578,7 +578,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>As sete estão confirmadas.</b> Nenhuma segue pendente de validação — o que resta em aberto é comercial, e está na seção 12.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 a P8 estão confirmadas.</b> A P9 é a única registrada como hipótese: seus valores foram fixados sem evidência e carregam gatilho de revisão.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
@@ -614,6 +614,16 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <h4><span class="n">P7</span> A perda é medida do razão, não parametrizada<span class="pri">Confirmada</span></h4>
         <p>Sai das contas de baixa por avaria, quebra e validade — dado que o produto já ingere desde a P3 — e é exibida como indicador com série e tendência. O percentual sobrevive apenas como alavanca de cenário contra essa base medida. Não há controle de validade, lote ou FEFO.</p>
         <p class="risk"><b>Efeito</b> "Reduzir perdas" é a primeira promessa do brief e não se cumpre com um número digitado: não se reduz o que não se mede. Quando não houver conta de perda mapeada, o indicador diz <b>não medido</b> — nunca zero, pelo mesmo princípio que a P6 aplica ao PP.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P8</span> Venda direta à empresa; a contabilidade é canal, não usuário<span class="pri">Confirmada</span></h4>
+        <p>O contador não detém a decisão: estimar o PME do próximo trimestre depende de safra, contrato de fornecedor e plano de produção — informação que mora dentro da empresa. Ele detém o dado histórico e o relacionamento, o que o torna canal de distribuição natural, não usuário primário.</p>
+        <p class="risk"><b>Efeito</b> Multiempresa continua Essencial desde o primeiro dia (RF-23), o onboarding é escrito para o controller e não para o escritório contábil, e não se constrói precificação por assento de contador antes de existirem dez clientes diretos.</p>
+      </div>
+      <div class="assump">
+        <h4><span class="n">P9</span> Cobrança por empresa, em três planos<span class="pri s">Hipótese</span></h4>
+        <p>Duas escolhas são estruturais e ficam decididas: cobrar por <b>empresa</b>, nunca por assento, e manter o <b>backtesting no plano pago</b>, porque é ele que sustenta a renovação. Os valores são ponto de partida — Essencial (1 empresa) R$ 300–500/mês; Profissional (3 empresas, cenários ilimitados, backtesting) R$ 800–1.200/mês; Contabilidade (10+ empresas) a partir de R$ 2.000/mês.</p>
+        <p class="risk"><b>Gatilho de revisão</b> Os valores foram fixados sem nenhuma conversa de precificação — é a única decisão deste documento sem evidência por trás. Revisar após 10 clientes pagantes ou 6 meses, o que vier primeiro. A lógica de valor é folgada: cortar 3 dias dos 41,2 de cobertura sobre os R$ 32 milhões de estoque do exemplo libera cerca de R$ 2,3 milhões. O teto não é o valor gerado, é a disposição a pagar da PME.</p>
       </div>
     </div>
   </div>
@@ -720,7 +730,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 <section id="s12">
   <div class="rail">12</div>
   <div>
-    <h2>Riscos e questões em aberto</h2>
+    <h2>Riscos e verificações pendentes</h2>
 
     <h3>Riscos</h3>
     <ul class="plain">
@@ -731,17 +741,20 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
       <li><b>O concorrente é o Excel</b><span>A troca só se justifica por cenários comparáveis e backtesting. Uma tabela mais bonita não move ninguém.</span></li>
     </ul>
 
-    <h3>Questões que bloqueiam a versão final</h3>
-    <ol class="q">
-      <li>A venda é para a empresa ou para a contabilidade que a atende?<span>Muda preço, empacotamento e a prioridade do requisito de multiempresa.</span></li>
-      <li>Qual o ticket-alvo e o desenho dos planos?<span>Nenhuma decisão de limite — empresas, usuários, horizonte — pode ser tomada antes disso.</span></li>
-    </ol>
+    <h3>O que ainda falta antes de construir</h3>
+    <div class="prose">
+      <p>Nenhuma questão de produto ou comercial segue em aberto — as decisões estão registradas de P1 a P9. Restam duas verificações empíricas, e nenhuma delas bloqueia o início da construção.</p>
+    </div>
+    <ul class="plain">
+      <li><b>O teste do balancete cronometrado</b><span>Pegar um balancete real e medir quanto leva do arquivo até a primeira projeção. É o único item que ainda pode alterar requisito de ingestão antes do desenvolvimento, e depende de um arquivo que só o cliente-piloto ou a contabilidade fornecem (P3).</span></li>
+      <li><b>A revisão de preço</b><span>Após 10 clientes pagantes ou 6 meses, o que vier primeiro. Os valores da P9 são a única decisão do documento fixada sem evidência.</span></li>
+    </ul>
   </div>
 </section>
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P7 confirmadas.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P8 confirmadas; P9 é hipótese de preço com gatilho de revisão.
 </footer>
 
 </div>
