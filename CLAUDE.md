@@ -49,7 +49,9 @@ driver is the core of the model:
 
 **PP is optional** (D6). Many food-industry SMEs have a short process and do not record WIP at all. Every
 aggregate calculation must treat an absent level as a deliberate absence, never as a silent zero and never as
-missing data to be imputed.
+missing data to be imputed. The same rule governs the loss indicator (D7): unmapped reads **não medido**, not
+0%. Reporting "no losses" to a company that simply lets spoilage run through CMV is worse than reporting
+nothing.
 
 Entities: `Empresa` → `Período` (month) → `Lançamento` (balance per level, custo de materiais, CMV, receita).
 On top of those sit `Cenário` and `Premissa` (projected PME, cost projection method, PMR, PMP, loss %). Each
@@ -85,7 +87,8 @@ Giro_anualizado  = CMV_12m / Estoque_médio
 Cobertura_dias   = PME_MP + PME_PP + PME_PA
 Ciclo_financeiro = Cobertura_dias + PMR - PMP
 NCG              = Estoque + (Receita * PMR / d) - (Compras * PMP / d)
-Custo_ajustado   = Custo_Materiais / (1 - perda%)
+perda%           = Perdas_do_período / Consumo_do_período   <- measured, never typed
+Custo_cenário    = Custo_projetado * (1 - perda_base) / (1 - perda_cenário)
 
 Compras_teto     = MP_alvo - MP_inicial + Custo_Materiais
                    where MP_alvo = Custo_Materiais * PME_alvo / d
@@ -148,9 +151,9 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D8)
 
-These closed the PRD draft and constrain implementation. **D1–D4 and D8 are confirmed; D5, D6 and D7 are
-pending stakeholder validation**, and none of those three changes the product itself — only the
-implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
+These closed the PRD draft and constrain implementation. **D1–D4, D7 and D8 are confirmed; only D5 and D6 are
+still pending stakeholder validation**, and neither changes the product — only the implementation. They appear
+as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
@@ -175,8 +178,13 @@ implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — i
    which work in the 360-day commercial year. The reference model's error was applying 360 to a monthly flow.
 5. **D5 — Average inventory by default**, degrading to closing balance when no opening balance exists.
 6. **D6 — PP is optional**, per the domain note above.
-7. **D7 — Loss is a parametric percentage** applied to consumption per level. The product quantifies the cost
-   of waste; it does not prevent it operationally.
+7. **D7 — Loss is measured from the razão, not parameterised.** *Confirmed.* It comes from the write-off
+   accounts (avaria, quebra, validade) mapped in RF-28 and is shown as an indicator with a trend series
+   (RF-13). **Never apply a loss percentage to consumption**: the consumption read from the razão already
+   contains the loss, so correcting it double-counts — that was the defect in the original formulation. The
+   percentage survives only as a scenario lever against the measured baseline, as a ratio of yields (RF-17),
+   which correctly becomes a no-op when the scenario equals the base. With no loss account mapped the
+   indicator reads **não medido**, never zero — same principle as D6 for PP. No lot, expiry or FEFO control.
 8. **D8 — The importer keeps a profile per source system and records the origin of every import.** *Confirmed.*
    The profile holds the export layout already known for that ERP, so the second client on the same ERP imports
    with no reconfiguration; the origin field is required on a company's first import (PRD RF-24). Which ERPs

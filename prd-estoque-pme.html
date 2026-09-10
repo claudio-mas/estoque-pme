@@ -495,7 +495,8 @@ Total_Estoque = MP <span class="op">+</span> PP <span class="op">+</span> PA</co
 Cobertura_dias   = PME_MP <span class="op">+</span> PME_PP <span class="op">+</span> PME_PA
 Ciclo_financeiro = Cobertura_dias <span class="op">+</span> PMR <span class="op">−</span> PMP
 NCG              = Estoque <span class="op">+</span> (Receita <span class="op">×</span> PMR <span class="op">/</span> d) <span class="op">−</span> (Compras <span class="op">×</span> PMP <span class="op">/</span> d)
-Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op">−</span> perda%)
+perda%           = Perdas_do_período <span class="op">/</span> Consumo_do_período  <span class="op">← medido, não digitado</span>
+Custo_cenário    = Custo_projetado <span class="op">×</span> (1 <span class="op">−</span> perda_base) <span class="op">/</span> (1 <span class="op">−</span> perda_cenário)
 
 Compras_teto     = MP_alvo <span class="op">−</span> MP_inicial <span class="op">+</span> Custo_Materiais
                    <span class="op">onde MP_alvo = Custo_Materiais × PME_alvo / d</span>
@@ -512,7 +513,7 @@ Produção_teto    = PA_alvo <span class="op">−</span> PA_inicial <span class=
     <ul class="plain">
       <li><b>Estoque médio</b> = (saldo inicial + saldo final) ÷ 2<span>Quando só houver saldo final disponível, usa-se o saldo final e o relatório sinaliza a substituição. A planilha de referência usa saldo final — conferido: 10.000 ÷ 17.500 × 360 = 205,71.</span></li>
       <li><b>Métodos de projeção da premissa</b><span>Último realizado com taxa de crescimento fixa; última observação; média simples dos últimos N; média ponderada; tendência linear; mesmo mês do ano anterior (sazonal); manual. Padrão: taxa de crescimento para as linhas de custo — é o que o modelo de referência faz — e média dos últimos 3 meses para o PME, com aviso quando a dispersão entre eles passar de 15%.</span></li>
-      <li><b>Perda</b> entra como percentual por nível aplicado ao consumo<span>Cobre a parte financeira da promessa de reduzir perdas. O controle físico de validade e lote fica fora da v1.</span></li>
+      <li><b>Perda é medida, não digitada</b><span>Vem das contas de baixa por avaria, quebra e validade, mapeadas no RF-28 junto com as demais: <code>perda% = Perdas_do_período / Consumo_do_período</code>. Digitar um percentual não entregaria nada — se o gestor soubesse sua taxa de perda com precisão, já estaria administrando isso. E aplicá-lo sobre o consumo seria dupla contagem: o consumo lido do razão <b>já contém</b> a perda. Como cenário, o percentual é uma razão de rendimentos contra a base medida, que corretamente vira no-op quando os dois se igualam. O controle físico de validade e lote continua fora da v1.</span></li>
       <li><b>Viés de calendário</b> — limitação conhecida, aceita na v1<span>Com <code>d</code> fixo em 30, o comprimento do mês entra no PME apurado. Com fluxo diário constante, fevereiro aparece 7% acima da verdade e janeiro 3% abaixo — amplitude de 10,7%. O viés propaga para a premissa de média de 3 meses e desloca o estoque projetado em cerca de 2%, dentro da meta de 12% de MAPE, mas não pode surpreender ninguém no backtesting. Usar dias corridos eliminaria o viés por construção, ao custo de implicar base anual de 365 e afastar-se 1,4% da convenção de 360 que o banco usa — troca que não compensa. Por isso <code>d</code> é constante nomeada no modelo, nunca literal: se o backtesting mostrar que o efeito importa, mudar é uma linha, porque as fórmulas já cancelam o fator.</span></li>
     </ul>
 
@@ -577,7 +578,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 a P4 estão confirmadas</b>; P5 a P7 ainda precisam de validação antes do desenvolvimento, e nenhuma delas altera o produto — apenas a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 a P4 e P7 estão confirmadas</b>; restam P5 e P6, que alteram apenas a implementação.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
@@ -610,9 +611,9 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <p class="risk"><b>Risco</b> Baixo. Exige que todo cálculo agregado trate o nível ausente como zero legítimo, não como dado faltante.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P7</span> A perda é um percentual paramétrico</h4>
-        <p>Aplicado ao consumo por nível, elevando o custo necessário. Não há controle de validade, lote ou FEFO.</p>
-        <p class="risk"><b>Risco</b> A promessa de reduzir perdas fica parcial — o produto quantifica o custo da perda, não a evita operacionalmente.</p>
+        <h4><span class="n">P7</span> A perda é medida do razão, não parametrizada<span class="pri">Confirmada</span></h4>
+        <p>Sai das contas de baixa por avaria, quebra e validade — dado que o produto já ingere desde a P3 — e é exibida como indicador com série e tendência. O percentual sobrevive apenas como alavanca de cenário contra essa base medida. Não há controle de validade, lote ou FEFO.</p>
+        <p class="risk"><b>Efeito</b> "Reduzir perdas" é a primeira promessa do brief e não se cumpre com um número digitado: não se reduz o que não se mede. Quando não houver conta de perda mapeada, o indicador diz <b>não medido</b> — nunca zero, pelo mesmo princípio que a P6 aplica ao PP.</p>
       </div>
     </div>
   </div>
@@ -628,10 +629,10 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="rf"><div class="rf-id">RF-01</div><div><div class="rf-t">Importar balancete e razão das contas de estoque no formato em que o ERP os exporta, com vários períodos por arquivo e vários arquivos numa só operação.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O cliente não transpõe nada à mão — o produto lê o arquivo como veio e o mapeamento resolve a semântica (RF-28). Doze meses entram numa operação, em menos de 60 s. Linhas inválidas são listadas com número da linha e motivo, sem abortar o lote. Um modelo de planilha em branco permanece disponível como saída de emergência para quem não consegue exportar o balancete, nunca como caminho principal.</div></div></div>
     <div class="rf"><div class="rf-id">RF-02</div><div><div class="rf-t">Lançar e editar dados manualmente por período e nível.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Edição de uma célula recalcula PME, projeção e indicadores sem recarregar a página.</div></div></div>
     <div class="rf"><div class="rf-id">RF-03</div><div><div class="rf-t">Validar consistência: período faltante, saldo negativo, custo zerado com estoque positivo, salto atípico de saldo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Cada inconsistência gera um aviso navegável até a célula de origem e pode ser dispensada com justificativa.</div></div></div>
-    <div class="rf"><div class="rf-id">RF-04</div><div><div class="rf-t">Reabrir período fechado e recalcular em cascata, preservando registro de auditoria.<span class="pri">Desejável</span></div><div class="rf-a"><b>Aceite</b> Cenários congelados não se alteram na reabertura; o backtesting passa a apontar a divergência.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-04</div><div><div class="rf-t">Reabrir período fechado e recalcular em cascata, preservando registro de auditoria.<span class="pri s">Desejável</span></div><div class="rf-a"><b>Aceite</b> Cenários congelados não se alteram na reabertura; o backtesting passa a apontar a divergência.</div></div></div>
     <div class="rf"><div class="rf-id">RF-05</div><div><div class="rf-t">Reimportar o mesmo arquivo sem duplicar lançamentos.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A chave período + nível é substituída, não somada; o resumo mostra quantas linhas foram criadas e quantas atualizadas.</div></div></div>
     <div class="rf"><div class="rf-id">RF-24</div><div><div class="rf-t">Manter perfis de importação por sistema de origem e registrar a origem a cada importação.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O perfil guarda o layout de exportação já conhecido de cada ERP, de modo que o segundo cliente do mesmo ERP importe sem reconfigurar nada. O campo de origem é obrigatório na primeira importação de cada empresa, com lista de ERPs conhecidos mais entrada livre, e um relatório interno consolida a distribuição — é o que define a fila de integrações da v2 por dado, e não por opinião. Só tem valor se existir desde o primeiro cliente.</div></div></div>
-    <div class="rf"><div class="rf-id">RF-28</div><div><div class="rf-t">Mapear as contas do plano de contas do cliente para MP, PP, PA, CMV e receita, guardando o mapeamento por empresa.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> É a parte difícil do problema e não desaparece com integração de ERP — por isso é resolvida na v1. O produto propõe a classificação por código e nome de conta; o gestor confirma. Feito uma vez por empresa e reaproveitado nas importações seguintes; conta nova entra como pendente e nunca é classificada em silêncio; o mapeamento é editável e auditável, e alterá-lo recalcula o histórico afetado.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-28</div><div><div class="rf-t">Mapear as contas do plano de contas do cliente para MP, PP, PA, CMV, receita e baixas por perda, guardando o mapeamento por empresa.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> É a parte difícil do problema e não desaparece com integração de ERP — por isso é resolvida na v1. O produto propõe a classificação por código e nome de conta; o gestor confirma. Feito uma vez por empresa e reaproveitado nas importações seguintes; conta nova entra como pendente e nunca é classificada em silêncio; o mapeamento é editável e auditável, e alterá-lo recalcula o histórico afetado.</div></div></div>
     <div class="rf"><div class="rf-id">RF-29</div><div><div class="rf-t">Derivar o custo de materiais do razão da conta de MP e confrontá-lo com o valor informado quando houver os dois.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> <span class="mono">Consumo = MP_inicial + Compras − MP_final</span> — a identidade do RF-26 lida ao contrário. Custo de materiais não é linha de balancete nem de DRE: digitado à mão, erra o PME de MP e contamina o teto de compra sem que nada acuse. Divergência acima do limite configurado (padrão 2%) gera aviso navegável, e a memória de cálculo mostra qual origem foi usada.</div></div></div>
 
     <div class="epic">E2 · Apuração histórica</div>
@@ -644,7 +645,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="rf"><div class="rf-id">RF-10</div><div><div class="rf-t">Projetar custo de materiais e CMV por método selecionável por linha, ou por entrada manual.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Métodos disponíveis: último realizado com taxa de crescimento fixa (padrão para as linhas de custo), última observação, média de N, média ponderada, tendência linear, mesmo mês do ano anterior, manual.</div></div></div>
     <div class="rf"><div class="rf-id">RF-11</div><div><div class="rf-t">Definir o PME projetado por nível e por período, herdado do método ou sobrescrito à mão.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Toda célula sobrescrita fica visualmente marcada e pode ser revertida ao valor calculado.</div></div></div>
     <div class="rf"><div class="rf-id">RF-12</div><div><div class="rf-t">Calcular MP, PP, PA e o total projetado para cada período do horizonte.<span class="pri">Essencial</span></div></div></div>
-    <div class="rf"><div class="rf-id">RF-13</div><div><div class="rf-t">Aplicar percentual de perda por nível sobre o consumo.<span class="pri">Desejável</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-13</div><div><div class="rf-t">Medir a perda por nível a partir das contas de baixa e exibi-la como indicador com série e tendência.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> <span class="mono">perda% = Perdas_do_período / Consumo_do_período</span>, com as contas de baixa por avaria, quebra e validade mapeadas no RF-28. Quando nenhuma conta de perda estiver mapeada, o indicador exibe <b>não medido</b>, nunca zero — muitas PMEs deixam a quebra correr dentro do CMV, e informar "sem perdas" seria pior do que não informar. O percentual não é aplicado sobre o consumo: o consumo lido do razão já contém a perda, e corrigi-lo seria dupla contagem.</div></div></div>
     <div class="rf"><div class="rf-id">RF-14</div><div><div class="rf-t">Projetar ciclo financeiro e necessidade de capital de giro a partir de PMR e PMP parametrizados.<span class="pri">Essencial</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-25</div><div><div class="rf-t">Definir PMR e PMP como parâmetros do cenário, sobrescrevíveis por período.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> São entrada do gestor, não apuração de contas a receber e a pagar (P2). Alimentam o ciclo financeiro e a NCG do RF-14 e o alerta de limite de crédito do RF-19. Sem eles a projeção para antes da conclusão que interessa ao sócio.</div></div></div>
     <div class="rf"><div class="rf-id">RF-26</div><div><div class="rf-t">Calcular o teto orçamentário de compra de materiais por período, a partir do PME alvo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Sai da identidade de saldo <span class="mono">Compras_teto = MP_alvo − MP_inicial + Custo_Materiais</span>, inteiramente em reais e no nível agregado — não exige item, quantidade nem preço unitário, e portanto não fere P1. No exemplo trabalhado, setembro: 12.047 − 12.000 + 20.288 = <span class="mono">R$ 20.335 mil</span>. A tela deve nomear o número como <b>teto de orçamento</b>, nunca como sugestão ou ordem de compra: ele diz quanto o caixa suporta comprar, não o que comprar.</div></div></div>
@@ -653,7 +654,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="epic">E4 · Cenários</div>
     <div class="rf"><div class="rf-id">RF-15</div><div><div class="rf-t">Criar cenário clonando as premissas de outro.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O clone é independente: alterar o original não afeta a cópia.</div></div></div>
     <div class="rf"><div class="rf-id">RF-16</div><div><div class="rf-t">Comparar até três cenários lado a lado em estoque total, NCG e pico de capital imobilizado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> A comparação mostra a diferença absoluta e percentual contra o cenário-base, mês a mês.</div></div></div>
-    <div class="rf"><div class="rf-id">RF-17</div><div><div class="rf-t">Analisar sensibilidade variando o PME de um nível em ± X dias.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O resultado é expresso em reais liberados ou consumidos de caixa, não apenas em variação de estoque.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-17</div><div><div class="rf-t">Analisar sensibilidade variando o PME de um nível em ± X dias, ou a taxa de perda contra a base medida.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O resultado é expresso em reais liberados ou consumidos de caixa, não apenas em variação de estoque. Para a perda, a alavanca é uma razão de rendimentos — <span class="mono">Custo_cenário = Custo_projetado × (1 − perda_base) / (1 − perda_cenário)</span> — que vira no-op quando o cenário iguala a base. Exemplo: 3% para 1,5% derruba o custo em 1,52%, ou R$ 308 mil no setembro do exemplo trabalhado.</div></div></div>
     <div class="rf"><div class="rf-id">RF-18</div><div><div class="rf-t">Congelar um cenário como orçamento aprovado.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O congelamento é imutável e datado; serve de base para o backtesting.</div></div></div>
 
     <div class="epic">E5 · Alertas e verificação</div>
@@ -662,7 +663,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
     <div class="epic">E6 · Saída e acesso</div>
     <div class="rf"><div class="rf-id">RF-21</div><div><div class="rf-t">Exportar a projeção para XLSX, com as premissas em aba separada.<span class="pri">Essencial</span></div></div></div>
-    <div class="rf"><div class="rf-id">RF-22</div><div><div class="rf-t">Gerar relatório de uma página em PDF para banco ou sócio.<span class="pri">Desejável</span></div></div></div>
+    <div class="rf"><div class="rf-id">RF-22</div><div><div class="rf-t">Gerar relatório de uma página em PDF para banco ou sócio.<span class="pri s">Desejável</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-23</div><div><div class="rf-t">Suportar múltiplas empresas por conta, com troca de contexto e papéis de editor e leitor.<span class="pri">Essencial</span></div></div></div>
   </div>
 </section>
@@ -740,7 +741,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P4 confirmadas; P5–P7 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P4 e P7 confirmadas; P5 e P6 pendentes de validação.
 </footer>
 
 </div>
