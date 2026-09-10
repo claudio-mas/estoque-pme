@@ -399,7 +399,7 @@ footer{
           <li>Cálculo do PME histórico e definição do PME projetado por período</li>
           <li>Projeção de custo de materiais e CMV por método selecionável ou entrada manual</li>
           <li>Ciclo financeiro e necessidade de capital de giro<span>PMR e PMP entram como parâmetros, não como modelagem de contas a receber e a pagar</span></li>
-          <li>Teto orçamentário de compra de materiais derivado do PME alvo<span>Quanto o caixa suporta comprar no período — um limite em reais, não uma sugestão de compra</span></li>
+          <li>Tetos orçamentários de compra e de produção derivados do PME alvo<span>Quanto o caixa suporta comprar e produzir no período — limites em reais, não sugestões nem plano de capacidade</span></li>
           <li>Cenários comparáveis lado a lado e análise de sensibilidade sobre o PME</li>
           <li>Indicadores de giro, cobertura em dias e estoque contra receita</li>
           <li>Backtesting da projeção congelada contra o realizado</li>
@@ -409,7 +409,7 @@ footer{
       <div>
         <h3>Fora da v1</h3>
         <ul class="out">
-          <li>Sugestão de compra e produção por SKU<span>Exige item, unidade, lead time de fornecedor, lote mínimo e estoque de segurança — é um MRP, outro produto. A linha divisória: a v1 diz <b>quanto</b> em reais (RF-26), nunca <b>o quê</b> nem <b>quando</b></span></li>
+          <li>Sugestão de compra e produção por SKU<span>Exige item, unidade, lead time de fornecedor, lote mínimo e estoque de segurança — é um MRP, outro produto. A linha divisória: a v1 diz <b>quanto</b> em reais (RF-26 e RF-27), nunca <b>o quê</b> nem <b>quando</b></span></li>
           <li>Controle de lote, validade e FEFO<span>Operacional e diário; depende de integração com o chão de fábrica</span></li>
           <li>Integração direta com ERP<span>O parque de ERPs da PME é fragmentado; a v1 entra por planilha para reduzir o tempo até o primeiro valor</span></li>
           <li>Custeio e formação de custo padrão<span>O produto consome o custo apurado, não o apura</span></li>
@@ -497,7 +497,10 @@ NCG              = Estoque <span class="op">+</span> (Receita <span class="op">�
 Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op">−</span> perda%)
 
 Compras_teto     = MP_alvo <span class="op">−</span> MP_inicial <span class="op">+</span> Custo_Materiais
-                   <span class="op">onde MP_alvo = Custo_Materiais × PME_alvo / d</span></code>
+                   <span class="op">onde MP_alvo = Custo_Materiais × PME_alvo / d</span>
+
+Produção_teto    = PA_alvo <span class="op">−</span> PA_inicial <span class="op">+</span> CMV
+                   <span class="op">onde PA_alvo = CMV × PME_alvo / d</span></code>
       </div>
       <div class="slab-note">
         <b>Sobre a base temporal.</b> A planilha de referência aplica o fator 360 sobre um fluxo de custo mensal, o que produz PMEs na casa de 200 — números que não são dias de calendário. Como as duas direções são inversas exatas, o fator se cancela e a escolha é de apresentação. A v1 adota <b>d = dias do período (30 no mês)</b>, exibindo o PME em dias reais: 17,8 dias de matéria-prima é um número que o gestor confere contra a própria operação; 207 não é.
@@ -641,6 +644,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
     <div class="rf"><div class="rf-id">RF-14</div><div><div class="rf-t">Projetar ciclo financeiro e necessidade de capital de giro a partir de PMR e PMP parametrizados.<span class="pri">Essencial</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-25</div><div><div class="rf-t">Definir PMR e PMP como parâmetros do cenário, sobrescrevíveis por período.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> São entrada do gestor, não apuração de contas a receber e a pagar (P2). Alimentam o ciclo financeiro e a NCG do RF-14 e o alerta de limite de crédito do RF-19. Sem eles a projeção para antes da conclusão que interessa ao sócio.</div></div></div>
     <div class="rf"><div class="rf-id">RF-26</div><div><div class="rf-t">Calcular o teto orçamentário de compra de materiais por período, a partir do PME alvo.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Sai da identidade de saldo <span class="mono">Compras_teto = MP_alvo − MP_inicial + Custo_Materiais</span>, inteiramente em reais e no nível agregado — não exige item, quantidade nem preço unitário, e portanto não fere P1. No exemplo trabalhado, setembro: 12.047 − 12.000 + 20.288 = <span class="mono">R$ 20.335 mil</span>. A tela deve nomear o número como <b>teto de orçamento</b>, nunca como sugestão ou ordem de compra: ele diz quanto o caixa suporta comprar, não o que comprar.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-27</div><div><div class="rf-t">Calcular o teto de produção por período, a partir do PME alvo de produtos acabados.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Gêmeo do RF-26, pela identidade de saldo de PA: <span class="mono">Produção_teto = PA_alvo − PA_inicial + CMV</span>. No exemplo trabalhado, setembro: 14.930 − 15.000 + 25.490 = <span class="mono">R$ 25.420 mil</span>. Está expresso ao custo da produção acabada, não em unidades, e <b>não verifica capacidade fabril</b> — é um limite financeiro, não um plano de produção; a tela precisa dizer isso.</div></div></div>
 
     <div class="epic">E4 · Cenários</div>
     <div class="rf"><div class="rf-id">RF-15</div><div><div class="rf-t">Criar cenário clonando as premissas de outro.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> O clone é independente: alterar o original não afeta a cópia.</div></div></div>
