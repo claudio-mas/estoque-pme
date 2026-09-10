@@ -88,9 +88,10 @@ Custo_ajustado   = Custo_Materiais / (1 - perda%)
 `Estoque_médio` = (opening balance + closing balance) / 2, falling back to the closing balance when no opening
 balance exists — and the report must say which one it used (D5).
 
-Projection methods for the premise (replacing the reference spreadsheet's underivable "Média" column): last
-observation, simple mean of last N, weighted mean, linear trend, same month last year (seasonal), manual.
-Default is the 3-month mean, with a warning when dispersion across those months exceeds 15%.
+Projection methods: last realized value with a fixed growth rate, last observation, simple mean of last N,
+weighted mean, linear trend, same month last year (seasonal), manual. Default is the growth rate for the cost
+lines — that is what the reference model actually does — and the 3-month mean for PME, with a warning when
+dispersion across those months exceeds 15%.
 
 ### Notes that are easy to get wrong
 
@@ -98,6 +99,12 @@ Default is the 3-month mean, with a warning when dispersion across those months 
   producing PME values around 200 that are not calendar days. Both directions are exact inverses, so the factor
   cancels and the choice is presentational — v1 shows real days (D4). Expect a scale mismatch when comparing
   against a client's existing spreadsheet, and explain it rather than "fixing" the formula.
+- **The reference spreadsheet's "Média" column is not an average — it is the first forecast period.** Its cost
+  rows are the last realized month compounded at exactly 2%/month: 19.500 → 19.890 → 20.288 → 20.694 → 21.107
+  → 21.530 → 21.960, and the same chain for CMV from 24.500. Verified in all twelve forecast cells. The PME
+  rows are entered by hand (the diagram says so outright); no average of the three visible months reproduces
+  them — arithmetic 213,77, harmonic 213,57, cost-weighted 214,05, against the 207,67 shown. Inventory rows
+  are fully derived from `custo * PME / 360`.
 - **Despite the "Estoque Médio" label, the reference numbers use the closing balance.** Verified against the
   diagram's own figures: 10.000 / 17.500 * 360 = 205,71.
 - **The diagram's forecast formulas render as `Custo x 360 / PME`;** its own numbers only reconcile with
@@ -127,13 +134,14 @@ change the product itself, not just the implementation. They appear as P1–P7 i
 
 1. Does "say how much to buy and produce" leave v1? If non-negotiable for the pilot customer, D1 inverts and
    the scope changes completely.
-2. What method was the reference spreadsheet's "Média" column meant to use? It does not reconcile with a
-   simple mean of the actuals (17.500 / 18.500 / 19.500 average to 18.500, but the column shows 19.890).
-3. Do PMR and PMP make v1, or does NCG wait? (D2.)
-4. Which ERPs do the first five customers use? Sets the v2 integration queue and the v1 importer's shape.
-5. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
+2. Do PMR and PMP make v1, or does NCG wait? (D2.)
+3. Which ERPs do the first five customers use? Sets the v2 integration queue and the v1 importer's shape.
+4. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
    multi-company support.
-6. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+5. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+
+The former question 2 — what the reference spreadsheet's "Média" column computed — is resolved; the answer is
+in the notes above.
 
 ## Conventions
 

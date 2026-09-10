@@ -503,9 +503,25 @@ Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op"
     <h3>Definições que precisam ficar explícitas</h3>
     <ul class="plain">
       <li><b>Estoque médio</b> = (saldo inicial + saldo final) ÷ 2<span>Quando só houver saldo final disponível, usa-se o saldo final e o relatório sinaliza a substituição. A planilha de referência usa saldo final — conferido: 10.000 ÷ 17.500 × 360 = 205,71.</span></li>
-      <li><b>Métodos de projeção da premissa</b><span>Última observação; média simples dos últimos N; média ponderada; tendência linear; mesmo mês do ano anterior (sazonal); manual. Padrão: média dos últimos 3 meses, com aviso quando a dispersão entre eles passar de 15%.</span></li>
+      <li><b>Métodos de projeção da premissa</b><span>Último realizado com taxa de crescimento fixa; última observação; média simples dos últimos N; média ponderada; tendência linear; mesmo mês do ano anterior (sazonal); manual. Padrão: taxa de crescimento para as linhas de custo — é o que o modelo de referência faz — e média dos últimos 3 meses para o PME, com aviso quando a dispersão entre eles passar de 15%.</span></li>
       <li><b>Perda</b> entra como percentual por nível aplicado ao consumo<span>Cobre a parte financeira da promessa de reduzir perdas. O controle físico de validade e lote fica fora da v1.</span></li>
     </ul>
+
+    <h3>O que a planilha de referência realmente faz</h3>
+    <div class="prose">
+      <p>Reconstruído a partir dos próprios números, não do rótulo das colunas. As linhas de custo crescem <b>2% ao mês, compostos</b>, a partir do último mês realizado — e a coluna rotulada "Média" não é média alguma: é o primeiro período projetado.</p>
+    </div>
+    <div class="slab">
+      <div class="slab-group">
+        <h4>Cadeia verificada célula a célula</h4>
+        <code>Custo de materiais   19.500 <span class="op">(ago)</span> → 19.890 → 20.288 → 20.694 → 21.107 → 21.530 → 21.960
+CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 → 26.000 → 26.520 → 27.050 → 27.591
+                     <span class="op">cada passo = valor anterior × 1,02</span></code>
+      </div>
+      <div class="slab-note">
+        <b>O PME, esse sim, é digitado à mão.</b> Nenhuma média dos três meses visíveis o reproduz — aritmética 213,77, harmônica 213,57, ponderada por custo 214,05, contra os 207,67 que a planilha exibe. O próprio diagrama instrui: <i>"faça a melhor estimativa para cada tipo de PME para o próximo período"</i>. As linhas de estoque, ao contrário, são inteiramente derivadas de custo × PME ÷ 360, sem exceção em nenhuma célula.
+      </div>
+    </div>
   </div>
 </section>
 
@@ -613,7 +629,7 @@ Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op"
 
     <div class="epic">E3 · Projeção</div>
     <div class="rf"><div class="rf-id">RF-09</div><div><div class="rf-t">Definir horizonte de projeção entre 3 e 18 meses, padrão 12.<span class="pri">Essencial</span></div></div></div>
-    <div class="rf"><div class="rf-id">RF-10</div><div><div class="rf-t">Projetar custo de materiais e CMV por método selecionável por linha, ou por entrada manual.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Métodos disponíveis: última observação, média de N, média ponderada, tendência linear, mesmo mês do ano anterior, manual.</div></div></div>
+    <div class="rf"><div class="rf-id">RF-10</div><div><div class="rf-t">Projetar custo de materiais e CMV por método selecionável por linha, ou por entrada manual.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Métodos disponíveis: último realizado com taxa de crescimento fixa (padrão para as linhas de custo), última observação, média de N, média ponderada, tendência linear, mesmo mês do ano anterior, manual.</div></div></div>
     <div class="rf"><div class="rf-id">RF-11</div><div><div class="rf-t">Definir o PME projetado por nível e por período, herdado do método ou sobrescrito à mão.<span class="pri">Essencial</span></div><div class="rf-a"><b>Aceite</b> Toda célula sobrescrita fica visualmente marcada e pode ser revertida ao valor calculado.</div></div></div>
     <div class="rf"><div class="rf-id">RF-12</div><div><div class="rf-t">Calcular MP, PP, PA e o total projetado para cada período do horizonte.<span class="pri">Essencial</span></div></div></div>
     <div class="rf"><div class="rf-id">RF-13</div><div><div class="rf-t">Aplicar percentual de perda por nível sobre o consumo.<span class="pri">Desejável</span></div></div></div>
@@ -701,7 +717,6 @@ Custo_ajustado   = Custo_Materiais <span class="op">/</span> (1 <span class="op"
     <h3>Questões que bloqueiam a versão final</h3>
     <ol class="q">
       <li>A promessa de "dizer quanto comprar e produzir" sai da v1?<span>Se for inegociável para o cliente-piloto, o produto passa a exigir SKU e o escopo muda por completo (ver P1).</span></li>
-      <li>Qual método a coluna "Média" da planilha de referência pretendia usar?<span>Não reconcilia com média simples dos realizados — 17.500, 18.500 e 19.500 dão 18.500, mas a coluna traz 19.890. Confirmar antes de replicar o comportamento.</span></li>
       <li>PMR e PMP entram na v1 ou a NCG fica para depois?<span>Define se o produto responde à pergunta de capital de giro do brief ou apenas projeta estoque (ver P2).</span></li>
       <li>Quais ERPs os cinco primeiros clientes usam?<span>Determina a ordem da fila de integrações da v2 e o formato do importador da v1.</span></li>
       <li>A venda é para a empresa ou para a contabilidade que a atende?<span>Muda preço, empacotamento e a prioridade do requisito de multiempresa.</span></li>
