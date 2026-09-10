@@ -4,8 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Pre-implementation, with a PRD draft in place. There is no source code, build system, package manager, test
-runner, or git repository yet — nothing to build, lint, or run. The stack has not been chosen.
+Pre-implementation. The PRD is complete and the stack is chosen (D11), but **no source code exists yet** —
+there is no build system, package manager or test runner, so there is nothing to build, lint or run. The
+repository holds documentation only.
+
+Git repo on branch `main`, private remote at https://github.com/claudio-mas/estoque-pme
 
 | File | What it is |
 |------|-----------|
@@ -13,10 +16,57 @@ runner, or git repository yet — nothing to build, lint, or run. The stack has 
 | `estoque.webp` | Reference spreadsheet model the brief is based on — source of the formulas |
 | `prd-estoque-pme.html` | **PRD v1 draft.** Standalone page; also published (private) at https://claude.ai/code/artifact/f3014e5d-8402-4f67-bf4f-17851b823f90 |
 
-When code lands, replace this section with the real build/test/run commands.
+When the first code lands, replace this section with the real build/test/run commands.
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,
 or a second, separate artifact is created instead of updating the existing link.
+
+## Stack (chosen, not yet built)
+
+TypeScript end to end (D11). The deciding factor was not the ecosystem: the RNF budget of under 2 s to
+recalculate 18 months × 3 levels × 3 scenarios means the calculation engine should run **in the browser** for
+instant feedback, with the server as the authority. One language means one implementation of that arithmetic
+rather than two that can silently diverge — which in a financial product is the expensive kind of bug.
+
+**The invariant:** the calculation engine is a **pure, dependency-free package** — plain functions over
+numbers, no DB access, no I/O. That is what lets it run on both sides, be tested against the PRD's worked
+example, and survive a change of anything else. Everything in the table below is replaceable; this is not.
+
+| Layer | Choice |
+|---|---|
+| Runtime | TypeScript strict, Node 22 LTS |
+| App | Next.js App Router — one deployable; the report route renders server-side for the PDF |
+| Database | PostgreSQL with **Row-Level Security** — tenant isolation enforced in the DB, not trusted to each query |
+| ORM | Drizzle — typed and close to SQL, which RLS and window functions will need |
+| Auth | Auth.js, self-hosted — PII stays in our own Postgres |
+| Read spreadsheets | SheetJS |
+| Write XLSX | ExcelJS |
+| PDF | Playwright over the HTML report route — one layout, not two |
+| Grid | TanStack Table (headless) — editable cells with overwrite marking is RF-11 |
+| Validation | Zod at every boundary, imports above all |
+| Tests | Vitest, with the PRD worked example as a golden fixture |
+
+**Money is `bigint` centavos, never a float.** PME and percentages are ratios, where floats are fine. Round at
+the storage boundary.
+
+### Brazilian specifics a generic stack choice gets wrong
+
+- **ERP CSV exports** commonly arrive with `;` as delimiter, comma as decimal separator and Latin-1 encoding.
+  The importer must detect all three instead of assuming UTF-8 with commas. Expect this to be half the work
+  of RF-01.
+- **Host in São Paulo** (`sa-east-1`, or GRU on Fly). LGPD does not require data residency — but keeping data
+  in-country removes the international-transfer conversation with customers and helps latency in an app this
+  table-heavy.
+- **Billing by boleto and PIX**, not cards: Brazilian SMEs do not pay for SaaS on a corporate card. Asaas, Iugu
+  or Pagar.me. Decide at the first paying customer, not before.
+- **SheetJS**: check the distribution channel and CVE history at install time — the npm package went stale and
+  official distribution moved to the project's own registry.
+
+### Deliberately excluded
+
+Redis, job queues, microservices, caching layers. A 12-month import fits in a synchronous request with a
+progress stream inside RF-01's 60 s budget, and the data is tiny — one company is 24 periods × 3 levels.
+Adding infrastructure before the first customer is the standard failure mode for this kind of project.
 
 ## Product
 
@@ -149,11 +199,11 @@ dispersion across those months exceeds 15%.
 - Worked example in the PRD reproduces the reference figures at d = 30 and lands within 0,2% of the
   spreadsheet's projected totals — useful as a regression fixture once code exists.
 
-## Decisions taken (D1–D10)
+## Decisions taken (D1–D11)
 
-These closed the PRD draft and constrain implementation. **D1–D9 are confirmed; D10 is a hypothesis with a
-review trigger, not a validated decision.** They appear as P1–P9 in the PRD (D8 has no P counterpart — it was
-decided after the draft).
+These closed the PRD draft and constrain implementation. **D1–D9 and D11 are confirmed; D10 is a hypothesis
+with a review trigger, not a validated decision.** D1–D7 appear as P1–P7 in the PRD, D9 and D10 as P8 and P9;
+D8 and D11 have no P counterpart — they were decided after the draft.
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
@@ -207,6 +257,10 @@ decided after the draft).
     Profissional (3 companies, unlimited scenarios, backtesting) R$ 800–1.200/mo; Contabilidade (10+) from
     R$ 2.000/mo. **They were set with zero pricing conversations** and carry a review trigger: revisit after 10
     paying customers or 6 months, whichever comes first. Appears as P9 in the PRD, flagged as a hypothesis.
+11. **D11 — TypeScript end to end.** *Confirmed.* The full choice and its rationale are in the Stack section
+    above. The load-bearing part is not the framework but the calculation engine being a pure, dependency-free
+    package that runs unchanged on client and server. This is an implementation decision and deliberately does
+    **not** appear in the PRD, which describes what the product does and why, not how it is built.
 
 ## Open items
 
