@@ -6,3 +6,7 @@ coverage/
 .env.*
 !.env.example
 .DS_Store
+
+# Estado local de ferramentas de agente
+.claude/
+.wolf/
