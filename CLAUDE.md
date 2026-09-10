@@ -4,11 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-The calculation engine exists; nothing else does. `packages/motor-calculo` is the pure, dependency-free
-package the whole stack decision rests on (D11) — it holds the PME in both directions, the projection
-methods, the derived indicators and the budget ceilings, and it is tested against the PRD's worked example.
-There is no app, no database and no importer yet: the next thing to build is the ingestion of the balancete
-(RF-01/RF-28), which is where the real work is (D3).
+Two pure packages exist; no app and no database yet.
+
+`packages/motor-calculo` is the dependency-free engine the whole stack decision rests on (D11) — the PME in
+both directions, the projection methods, the derived indicators and the budget ceilings, tested against the
+PRD's worked example.
+
+`packages/importador` reads the balancete as the ERP exports it (RF-01, D3): encoding, delimiter, decimal
+separator, header position and column roles are all detected, and what the detection finds *is* the ERP
+profile of RF-24 — feed it back on the next file and nothing is re-detected. It is pure in the same sense:
+bytes in, structure plus diagnostics out. **Reading the file is all it does** — the meaning of an account is
+the per-company mapping of RF-28, and is not the importer's job.
+
+Still missing on the ingestion path, in the order that matters: the account mapping (RF-28), the razão
+reader that RF-29 and the loss indicator both need (D7), XLSX input via SheetJS — today only delimited text
+is read — and persistence with the idempotent `período + nível` key (RF-05).
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
@@ -17,7 +27,7 @@ npm workspaces, Node 22+. Commands run from the repository root:
 | `npm install` | Installs the workspace. Dev dependencies only — the engine itself has none |
 | `npm test` | Vitest over every workspace |
 | `npm run typecheck` | `tsc --noEmit` over every workspace |
-| `npm test --workspace @estoque-pme/motor-calculo` | Just the engine |
+| `npm test --workspace @estoque-pme/motor-calculo` | One package only (`@estoque-pme/importador` for the other) |
 
 On Windows, run npm from PowerShell rather than Git Bash: package install scripts spawn `cmd.exe`, which does
 not inherit Git Bash's `PATH` and fails to find `node`.
@@ -30,6 +40,7 @@ Git repo on branch `main`, private remote at https://github.com/claudio-mas/esto
 | `estoque.webp` | Reference spreadsheet model the brief is based on — source of the formulas |
 | `prd-estoque-pme.html` | **PRD v1 draft.** Standalone page; also published (private) at https://claude.ai/code/artifact/f3014e5d-8402-4f67-bf4f-17851b823f90 |
 | `packages/motor-calculo/` | The calculation engine. `test/exemplo-trabalhado.test.ts` is the golden fixture |
+| `packages/importador/` | Balancete reader. `test/balancete.test.ts` carries a realistic Latin-1 fixture |
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,
 or a second, separate artifact is created instead of updating the existing link.
