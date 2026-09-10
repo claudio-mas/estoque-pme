@@ -578,7 +578,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 a P4 e P7 estão confirmadas</b>; restam P5 e P6, que alteram apenas a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>As sete estão confirmadas.</b> Nenhuma segue pendente de validação — o que resta em aberto é comercial, e está na seção 12.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
@@ -601,14 +601,14 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <p class="risk"><b>Efeito</b> Para quem vem da planilha antiga, a conversão é <b>dividir por 12</b>. Resta um viés de calendário conhecido e aceito, de cerca de 2% no estoque projetado, documentado na seção 5.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P5</span> Estoque médio como padrão, saldo final como alternativa</h4>
+        <h4><span class="n">P5</span> Estoque médio como padrão, saldo final como alternativa<span class="pri">Confirmada</span></h4>
         <p>O rótulo do modelo de referência diz "estoque médio", mas os números usam o saldo de fechamento. A v1 usa a média e degrada para o saldo final quando não houver saldo inicial.</p>
-        <p class="risk"><b>Risco</b> Baixo. Produz pequena divergência contra a planilha antiga do cliente, que precisa ser explicada na comparação.</p>
+        <p class="risk"><b>Efeito</b> A degradação virou caminho raro com a P3: o balancete traz saldo anterior em toda linha, inclusive no primeiro período da série, então dado importado sempre permite a média. O saldo final só entra em lançamento manual. Resta uma pequena divergência contra a planilha antiga do cliente, que precisa ser explicada na comparação.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P6</span> PP é opcional</h4>
-        <p>Empresas sem apontamento de produtos em processo trabalham com dois níveis, sem penalidade nos indicadores.</p>
-        <p class="risk"><b>Risco</b> Baixo. Exige que todo cálculo agregado trate o nível ausente como zero legítimo, não como dado faltante.</p>
+        <h4><span class="n">P6</span> PP é opcional<span class="pri">Confirmada</span></h4>
+        <p>Empresas sem apontamento de produtos em processo trabalham com dois níveis, sem penalidade nos indicadores. Todo cálculo agregado trata o nível ausente como ausência deliberada, nunca como zero silencioso nem como dado a imputar.</p>
+        <p class="risk"><b>Efeito</b> Ausência de conta de PP não significa ausência de processo: o material em elaboração está contabilizado em MP ou em PA, inflando o PME do nível que o absorveu. A tela precisa dizer isso, sob pena de o gestor ler o PME de acabados como se fosse ciclo curto quando não é.</p>
       </div>
       <div class="assump">
         <h4><span class="n">P7</span> A perda é medida do razão, não parametrizada<span class="pri">Confirmada</span></h4>
@@ -741,7 +741,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P4 e P7 confirmadas; P5 e P6 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P7 confirmadas.
 </footer>
 
 </div>

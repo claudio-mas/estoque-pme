@@ -151,8 +151,8 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D8)
 
-These closed the PRD draft and constrain implementation. **D1–D4, D7 and D8 are confirmed; only D5 and D6 are
-still pending stakeholder validation**, and neither changes the product — only the implementation. They appear
+These closed the PRD draft and constrain implementation. **All of D1–D8 are confirmed** — nothing here is
+still waiting on stakeholder validation, and the only open items left are commercial (see below). They appear
 as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
@@ -177,7 +177,12 @@ as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draf
    Estoque / CMV_mensal * 30` — so the product agrees with the bank, the accountant and the textbook, all of
    which work in the 360-day commercial year. The reference model's error was applying 360 to a monthly flow.
 5. **D5 — Average inventory by default**, degrading to closing balance when no opening balance exists.
-6. **D6 — PP is optional**, per the domain note above.
+   *Confirmed.* Since D3, that degradation is a rare path: the balancete carries `saldo anterior` on every
+   line, including the first period of the series, so imported data always supports the average. Only manual
+   entry falls back to the closing balance.
+6. **D6 — PP is optional**, per the domain note above. *Confirmed.* One caveat to surface in the UI: an absent
+   PP account does not mean there is no work in process — it means the WIP sits inside MP or PA, inflating
+   that level's PME. Never let a two-level company's `PME_PA` be read as a genuinely short cycle.
 7. **D7 — Loss is measured from the razão, not parameterised.** *Confirmed.* It comes from the write-off
    accounts (avaria, quebra, validade) mapped in RF-28 and is shown as an indicator with a trend series
    (RF-13). **Never apply a loss percentage to consumption**: the consumption read from the razão already
