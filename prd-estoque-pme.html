@@ -568,12 +568,12 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P2 está confirmada</b>; as demais ainda precisam de validação antes do desenvolvimento, e P1 e P3 alteram o produto, não só a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 e P2 estão confirmadas</b>; as demais ainda precisam de validação antes do desenvolvimento, e P3 é a única remanescente que altera o produto, não só a implementação.</p>
     <div class="assumps">
       <div class="assump">
-        <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU</h4>
+        <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
         <p>A v1 opera em valor (R$) sobre MP, PP e PA consolidados. Não há item, quantidade nem preço unitário.</p>
-        <p class="risk"><b>Risco</b> A promessa de "dizer quanto comprar" fica de fora. Se ela for inegociável para o cliente-piloto, o produto é outro e o PRD precisa ser refeito.</p>
+        <p class="risk"><b>Efeito</b> A promessa de "dizer quanto comprar e produzir" sai da v1 por decisão. Os dados que ela exigiria — item, lead time, lote mínimo, estoque de segurança — são exatamente os que o modelo de PME não usa, e coletá-los inviabilizaria a meta de 30 minutos de onboarding. O comprador também é outro: suprimentos, não controladoria.</p>
       </div>
       <div class="assump">
         <h4><span class="n">P2</span> Receita e ciclo financeiro entram na v1<span class="pri">Confirmada</span></h4>
@@ -718,7 +718,6 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
     <h3>Questões que bloqueiam a versão final</h3>
     <ol class="q">
-      <li>A promessa de "dizer quanto comprar e produzir" sai da v1?<span>Se for inegociável para o cliente-piloto, o produto passa a exigir SKU e o escopo muda por completo (ver P1).</span></li>
       <li>A venda é para a empresa ou para a contabilidade que a atende?<span>Muda preço, empacotamento e a prioridade do requisito de multiempresa.</span></li>
       <li>Qual o ticket-alvo e o desenho dos planos?<span>Nenhuma decisão de limite — empresas, usuários, horizonte — pode ser tomada antes disso.</span></li>
     </ol>
@@ -727,7 +726,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P2 confirmada; P1 e P3–P7 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1 e P2 confirmadas; P3–P7 pendentes de validação.
 </footer>
 
 </div>

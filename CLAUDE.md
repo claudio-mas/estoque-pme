@@ -114,12 +114,14 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D7)
 
-These closed the PRD draft and constrain implementation. **D2 and D8 are confirmed; the rest are pending
-stakeholder validation.** D1 and D3 change the product itself, not just the implementation. They appear as
-P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
+These closed the PRD draft and constrain implementation. **D1, D2 and D8 are confirmed; the rest are pending
+stakeholder validation.** D3 is the only one still open that changes the product itself rather than just the
+implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
-1. **D1 — Aggregate by level, not per SKU.** v1 works in R$ over consolidated MP/PP/PA, with no item, quantity,
-   or unit price. This is what puts "how much to buy" out of scope; reversing it means redoing the PRD.
+1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
+   item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
+   (item, lead time, minimum lot, safety stock) is exactly what the PME model does not use, and collecting it
+   would sink the 30-minute onboarding target. Do not reintroduce SKU-level fields into v1 models or importers.
 2. **D2 — Revenue and financial cycle are in v1.** *Confirmed.* Two of the brief's five questions (inventory
    vs. sales, working-capital requirement) cannot be answered from cost and CMV alone, so `receita` is an
    input and PMR/PMP are scenario parameters (PRD RF-25), overridable per period. They are entered by the
@@ -138,15 +140,15 @@ P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 ## Open questions blocking the final PRD
 
-1. Does "say how much to buy and produce" leave v1? If non-negotiable for the pilot customer, D1 inverts and
-   the scope changes completely.
-2. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
-   multi-company support.
-3. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+Only commercial questions remain; nothing here blocks building the product.
 
-Three questions have been closed and must not be reopened without new information: what the reference
-spreadsheet's "Média" column computed (answered in the notes above), whether PMR/PMP make v1 (D2), and which
-ERPs to integrate with (D8 replaces the question with a measurement).
+1. Is the sale to the company or to the accounting firm that serves it? Changes pricing and the priority of
+   multi-company support.
+2. Target ticket and plan design — no limit decision (companies, users, horizon) can be made before this.
+
+Four questions have been closed and must not be reopened without new information: whether "how much to buy"
+stays in v1 (D1), what the reference spreadsheet's "Média" column computed (answered in the notes above),
+whether PMR/PMP make v1 (D2), and which ERPs to integrate with (D8 replaces the question with a measurement).
 
 ## Conventions
 
