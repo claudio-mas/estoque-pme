@@ -24,7 +24,8 @@ cabeçalho do arquivo, não em cada linha.
 _Avoid_: data de referência, período de apuração
 
 **Lançamento**:
-Os números realizados de uma empresa num período: saldo por nível, custo de materiais, CMV e receita.
+Os números realizados de uma empresa num período: saldo por nível, custo de materiais, CMV e receita. Não
+confunda com o [[lançamento de razão]], que é uma linha do livro — este é o mês inteiro consolidado.
 _Avoid_: registro, entrada, movimento
 
 **Nível**:
@@ -81,9 +82,19 @@ de estoque, e o único artefato que toda PME brasileira produz todo mês, indepe
 _Avoid_: extrato, relatório de estoque, fechamento
 
 **Razão**:
-O livro razão de uma conta: o detalhe dos lançamentos que compõem o movimento do período. É de onde saem o
-custo de materiais derivado e as perdas — o balancete sozinho não os revela.
+O livro razão de uma conta: o detalhe dos lançamentos que compõem o movimento do período. É de onde sai o
+consumo, e portanto o custo de materiais derivado — o balancete sozinho não os revela.
 _Avoid_: extrato de conta, movimentação analítica
+
+**Lançamento de razão**:
+Uma linha do livro razão: data, histórico, valor a débito ou a crédito e, quando o ERP a exporta, a
+contrapartida. Distinto do [[lançamento]], que é o mês consolidado de uma empresa.
+_Avoid_: partida, movimento, item do razão
+
+**Contrapartida**:
+A conta do outro lado de um lançamento. É ela que separa consumo de devolução a fornecedor, e sem ela o
+consumo não se deriva — nunca se aproxima.
+_Avoid_: conta destino, conta de origem, contra-conta
 
 **Conta sintética** / **Conta analítica**:
 Sintética é a conta que agrega outras abaixo dela no plano de contas; analítica é a folha. Somar as duas
@@ -121,6 +132,12 @@ _Avoid_: giro em dias, prazo de estoque, cobertura de um nível, DIO
 **CMV** (Custo das Mercadorias Vendidas):
 O custo do que foi vendido no período. Direcionador de custo de PP e de PA.
 _Avoid_: COGS, custo das vendas, custo de produção
+
+**Consumo**:
+O que saiu de um nível para fora dele no período, medido pelos créditos da conta no razão. Contém a perda,
+e é assim que tem de ficar: o consumo lido do razão já a inclui, e descontá-la seria dupla contagem. É o
+denominador do indicador de perda, e no caso de MP é o custo de materiais.
+_Avoid_: saída, baixa, requisição, gasto
 
 **Custo de materiais**:
 O material consumido na produção no período. Não é linha de balancete nem de DRE: deriva-se do razão da

@@ -14,18 +14,29 @@
 export type {
   Codificacao,
   ColunasBalancete,
+  ColunasRazao,
   Competencia,
+  ContaRazao,
+  DelimitacaoDeRazao,
   Delimitador,
+  Dialeto,
   Diagnostico,
+  LancamentoRazao,
+  LayoutDeBalancete,
+  LayoutDeRazao,
   LinhaBalancete,
   PerfilImportacao,
   ResultadoBalancete,
+  ResultadoRazao,
   SeparadorDecimal,
   Severidade,
 } from './tipos';
 
 export { lerBalancete } from './balancete';
 export type { OpcoesBalancete } from './balancete';
+
+export { lerRazao } from './razao';
+export type { OpcoesRazao } from './razao';
 
 export { decodificar, normalizar } from './texto';
 export type { TextoDecodificado } from './texto';
@@ -37,8 +48,10 @@ export { lerCsv, vazio } from './csv';
 export type { RegistroCsv } from './csv';
 
 export { detectarDecimal, detectarDelimitador, detectarDialeto } from './dialeto';
-export type { Dialeto } from './dialeto';
+export type { DialetoDelimitado } from './dialeto';
 
 export { detectarCompetencia } from './competencia';
 export { reconhecerCabecalho } from './colunas';
+export { reconhecerCabecalhoDeRazao } from './colunas-razao';
+export type { CabecalhoDeRazaoReconhecido, PapelDeColunaRazao } from './colunas-razao';
 export type { CabecalhoReconhecido, PapelDeColuna } from './colunas';

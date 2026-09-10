@@ -10,6 +10,8 @@ export type {
   Centavos,
   Cobertura,
   Competencia,
+  ConsumoDeNivel,
+  CustoDeMateriais,
   Lancamento,
   Nivel,
   Perda,
@@ -44,8 +46,10 @@ export { comprasTeto, producaoTeto } from './tetos';
 export type { EntradaCompras, EntradaProducao } from './tetos';
 
 export {
+  LIMITE_DIVERGENCIA_CUSTO_MATERIAIS,
   cicloFinanceiro,
   cobertura,
+  confrontarCustoMateriais,
   custoMateriaisDerivado,
   custoSobPerdaDeCenario,
   giroAnualizado,

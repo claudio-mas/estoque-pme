@@ -15,7 +15,14 @@ const CANDIDATOS: readonly Delimitador[] = [';', ',', '\t', '|'];
 /** Quantas linhas bastam para decidir. Arquivo grande não precisa ser lido todo. */
 const LINHAS_DE_AMOSTRA = 200;
 
-export interface Dialeto {
+/**
+ * O que se detecta a partir do **texto** já decodificado.
+ *
+ * Nome qualificado porque `Dialeto`, em `tipos.ts`, é a coisa maior: a
+ * propriedade do ERP, que inclui a codificação — e essa vem dos bytes, antes de
+ * existir texto para inspecionar.
+ */
+export interface DialetoDelimitado {
   readonly delimitador: Delimitador;
   readonly separadorDecimal: SeparadorDecimal;
 }
@@ -78,7 +85,7 @@ export function detectarDecimal(texto: string, delimitador: Delimitador): Separa
   return delimitador === ',' ? '.' : ',';
 }
 
-export function detectarDialeto(texto: string): Dialeto {
+export function detectarDialeto(texto: string): DialetoDelimitado {
   const delimitador = detectarDelimitador(texto);
   return { delimitador, separadorDecimal: detectarDecimal(texto, delimitador) };
 }

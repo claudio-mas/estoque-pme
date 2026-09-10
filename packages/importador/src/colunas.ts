@@ -62,29 +62,66 @@ const SINONIMOS: Readonly<Record<PapelDeColuna, readonly string[]>> = {
   ],
 };
 
-/** Pares (papel, sinônimo) ordenados do rótulo mais longo para o mais curto. */
-const PARES: readonly (readonly [PapelDeColuna, string])[] = Object.entries(SINONIMOS)
-  .flatMap(([papel, rotulos]) => rotulos.map((rotulo) => [papel as PapelDeColuna, rotulo] as const))
-  .sort((a, b) => b[1].length - a[1].length);
+/**
+ * Pares (papel, sinônimo) ordenados do rótulo mais longo para o mais curto.
+ *
+ * Genérico porque o razão reconhece o cabeçalho dele pela mesma regra: a ordem
+ * por comprimento e a atribuição gulosa são a parte difícil, e ter duas cópias
+ * dela seria ter duas regras que divergem na primeira correção.
+ */
+export function paresDe<P extends string>(
+  sinonimos: Readonly<Record<P, readonly string[]>>,
+): readonly (readonly [P, string])[] {
+  return Object.entries(sinonimos)
+    .flatMap(([papel, rotulos]) =>
+      (rotulos as readonly string[]).map((rotulo) => [papel as P, rotulo] as const),
+    )
+    .sort((a, b) => b[1].length - a[1].length);
+}
+
+const PARES = paresDe(SINONIMOS);
 
 /** Papéis que uma célula de cabeçalho pode ter, do mais provável para o menos. */
-function papeisDe(celula: string): PapelDeColuna[] {
+export function papeisDaCelula<P extends string>(
+  celula: string,
+  pares: readonly (readonly [P, string])[],
+): P[] {
   const texto = normalizar(celula);
   if (texto === '') return [];
 
-  const encontrados: PapelDeColuna[] = [];
-  for (const [papel, rotulo] of PARES) {
+  const encontrados: P[] = [];
+  for (const [papel, rotulo] of pares) {
     if (encontrados.includes(papel)) continue;
     if (texto === rotulo || texto.startsWith(`${rotulo} `) || texto.endsWith(` ${rotulo}`)) {
       encontrados.push(papel);
     }
   }
   if (encontrados.length === 0) {
-    for (const [papel, rotulo] of PARES) {
+    for (const [papel, rotulo] of pares) {
       if (!encontrados.includes(papel) && texto.includes(rotulo)) encontrados.push(papel);
     }
   }
   return encontrados;
+}
+
+/**
+ * Atribuição gulosa da esquerda para a direita: cada célula fica com o melhor
+ * papel ainda livre.
+ */
+export function atribuirPapeis<P extends string>(
+  campos: readonly string[],
+  pares: readonly (readonly [P, string])[],
+): Map<P, number> {
+  const atribuido = new Map<P, number>();
+  campos.forEach((celula, indice) => {
+    for (const papel of papeisDaCelula(celula, pares)) {
+      if (!atribuido.has(papel)) {
+        atribuido.set(papel, indice);
+        return;
+      }
+    }
+  });
+  return atribuido;
 }
 
 export interface CabecalhoReconhecido {
@@ -102,16 +139,7 @@ export interface CabecalhoReconhecido {
  * `codigo` disponível.
  */
 export function reconhecerCabecalho(campos: readonly string[]): CabecalhoReconhecido | null {
-  const atribuido = new Map<PapelDeColuna, number>();
-
-  campos.forEach((celula, indice) => {
-    for (const papel of papeisDe(celula)) {
-      if (!atribuido.has(papel)) {
-        atribuido.set(papel, indice);
-        return;
-      }
-    }
-  });
+  const atribuido = atribuirPapeis(campos, PARES);
 
   const codigo = atribuido.get('codigo');
   const descricao = atribuido.get('descricao');

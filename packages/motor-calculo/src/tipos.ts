@@ -81,6 +81,38 @@ export type SaldoDeNivel =
   | { readonly estado: 'indefinido'; readonly motivo: string };
 
 /**
+ * O consumo de um nível no período, lido do razão.
+ *
+ * É o denominador do indicador de perda (RF-13) e, no caso de MP, o custo de
+ * materiais. `indefinido` é o caso em que a contrapartida de algum crédito não
+ * veio no arquivo ou não está mapeada: derivar assim mesmo escolheria um dos
+ * dois erros possíveis e o cometeria em silêncio (ADR-0005).
+ */
+export type ConsumoDeNivel =
+  | { readonly estado: 'lido'; readonly valor: Centavos }
+  | { readonly estado: 'indefinido'; readonly motivo: string };
+
+/**
+ * O custo de materiais e **de onde ele veio** (RF-29).
+ *
+ * A origem vive dentro do resultado, não num campo paralelo, pelo mesmo motivo
+ * que `Pme` carrega `base`: o relatório tem de dizer qual origem usou, e dois
+ * campos separados podem divergir. `conferido` é o caso em que existem os dois
+ * — deriva-se do razão e o gestor também digitou —, e a `divergencia` é a razão
+ * entre a diferença e o derivado, para comparar com o limite do RF-29.
+ */
+export type CustoDeMateriais =
+  | { readonly origem: 'derivado'; readonly valor: Centavos }
+  | { readonly origem: 'informado'; readonly valor: Centavos }
+  | {
+      readonly origem: 'conferido';
+      readonly valor: Centavos;
+      readonly informado: Centavos;
+      readonly divergencia: number;
+    }
+  | { readonly origem: 'indefinido'; readonly motivo: string };
+
+/**
  * Os números realizados de uma empresa num período.
  *
  * É o que a apuração consome e o que a importação produz. Não carrega a
@@ -101,4 +133,13 @@ export interface Lancamento {
   readonly cmv: Centavos | null;
   readonly receita: Centavos | null;
   readonly perdas: Readonly<Record<Nivel, Centavos | null>>;
+  /**
+   * O que o razão disse. `custoMateriais` é o que o produto decidiu usar, e
+   * quando os dois divergem é exatamente aí que o RF-29 tem algo a dizer — um
+   * campo só apagaria a diferença que o requisito existe para mostrar.
+   */
+  readonly consumo: Readonly<Record<Nivel, ConsumoDeNivel>>;
+  readonly custoMateriais: CustoDeMateriais;
+  /** Entradas de MP que não vieram de outro nível de estoque. Entrada do `ncg`. */
+  readonly compras: Centavos | null;
 }

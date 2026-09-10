@@ -28,6 +28,9 @@ export { MAPEAMENTO_VAZIO, proporMapeamento } from './proposta';
 export { validarMapeamento } from './validacao';
 
 export { aplicarMapeamento } from './aplicacao';
-export type { ResultadoAplicacao } from './aplicacao';
+export type { OpcoesAplicacao, ResultadoAplicacao } from './aplicacao';
+
+export { classificarContrapartida, comprasDeMp, consumoDoNivel } from './consumo';
+export type { Contrapartida } from './consumo';
 
 export { descendeDe, paiDe, pertenceA, topos } from './subarvore';

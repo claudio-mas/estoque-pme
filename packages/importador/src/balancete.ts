@@ -43,7 +43,7 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
   const diagnosticos: Diagnostico[] = [];
   const { perfil } = opcoes;
 
-  const { texto, codificacao } = decodificar(bytes, perfil?.codificacao);
+  const { texto, codificacao } = decodificar(bytes, perfil?.dialeto.codificacao);
   if (codificacao !== 'utf-8' && perfil === undefined) {
     diagnosticos.push({
       severidade: 'info',
@@ -55,7 +55,10 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
 
   const dialeto =
     perfil !== undefined
-      ? { delimitador: perfil.delimitador, separadorDecimal: perfil.separadorDecimal }
+      ? {
+          delimitador: perfil.dialeto.delimitador,
+          separadorDecimal: perfil.dialeto.separadorDecimal,
+        }
       : detectarDialeto(texto);
 
   const registros = lerCsv(texto, dialeto.delimitador);
@@ -109,11 +112,13 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
     linhas: marcarSinteticas(linhas),
     diagnosticos,
     perfil: {
-      codificacao,
-      delimitador: dialeto.delimitador,
-      separadorDecimal: dialeto.separadorDecimal,
-      linhaCabecalho: indice,
-      colunas,
+      dialeto: {
+        codificacao,
+        delimitador: dialeto.delimitador,
+        separadorDecimal: dialeto.separadorDecimal,
+      },
+      balancete: { linhaCabecalho: indice, colunas },
+      razao: null,
     },
   };
 }
@@ -135,10 +140,13 @@ function localizarCabecalho(
   registros: readonly RegistroCsv[],
   perfil: PerfilImportacao | undefined,
 ): Cabecalho | null {
-  if (perfil !== undefined) {
-    return registros[perfil.linhaCabecalho] === undefined
+  // Um perfil que só conhece o razão daquele ERP não descreve este arquivo: o
+  // dialeto aproveita, o layout não, e a detecção volta a correr.
+  const layout = perfil?.balancete;
+  if (layout != null) {
+    return registros[layout.linhaCabecalho] === undefined
       ? null
-      : { indice: perfil.linhaCabecalho, colunas: perfil.colunas };
+      : { indice: layout.linhaCabecalho, colunas: layout.colunas };
   }
 
   let melhor: Cabecalho | null = null;

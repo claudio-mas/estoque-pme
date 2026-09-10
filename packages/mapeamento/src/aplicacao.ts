@@ -12,9 +12,25 @@
  * quando há conta pendente que possa pertencer a ele. Somar zero em qualquer um
  * dos dois é o erro que o CLAUDE.md proíbe em três lugares diferentes.
  */
-import type { LinhaBalancete, ResultadoBalancete } from '@estoque-pme/importador';
+import type {
+  LinhaBalancete,
+  ResultadoBalancete,
+  ResultadoRazao,
+} from '@estoque-pme/importador';
 import { normalizar } from '@estoque-pme/importador';
-import type { Centavos, Lancamento, Nivel, SaldoDeNivel } from '@estoque-pme/motor-calculo';
+import {
+  LIMITE_DIVERGENCIA_CUSTO_MATERIAIS,
+  confrontarCustoMateriais,
+} from '@estoque-pme/motor-calculo';
+import type {
+  Centavos,
+  ConsumoDeNivel,
+  CustoDeMateriais,
+  Lancamento,
+  Nivel,
+  SaldoDeNivel,
+} from '@estoque-pme/motor-calculo';
+import { comprasDeMp, consumoDoNivel } from './consumo';
 import { proporMapeamento } from './proposta';
 import { paiDe, pertenceA, topos } from './subarvore';
 import type {
@@ -34,6 +50,25 @@ export interface ResultadoAplicacao {
   readonly diagnosticos: readonly DiagnosticoDeMapeamento[];
   readonly pendentes: readonly ContaPendente[];
 }
+
+export interface OpcoesAplicacao {
+  /**
+   * O razão das contas de estoque do mesmo período.
+   *
+   * Opcional: exigi-lo empurraria contra a meta de 30 minutos de onboarding, e
+   * o cliente que não consegue exportá-lo no primeiro dia perderia MP inteiro.
+   * Sem ele, o custo de materiais só existe se for digitado — e aí carrega
+   * aviso permanente (ADR-0006).
+   */
+  readonly razao?: ResultadoRazao;
+  /** Custo de materiais digitado pelo gestor, quando houver. */
+  readonly custoMateriaisInformado?: Centavos;
+  /** Divergência tolerada entre derivado e informado (RF-29, padrão 2%). */
+  readonly limiteDivergencia?: number;
+}
+
+const SEM_RAZAO =
+  'Sem razão da conta de MP e sem valor informado: o custo de materiais não é linha de balancete nem de DRE.';
 
 /** O sentido em que o movimento de cada papel é positivo. */
 function sentidoDe(papel: PapelDeConta['papel']): bigint {
@@ -298,6 +333,7 @@ function conferirDescricoes(
 export function aplicarMapeamento(
   mapeamento: Mapeamento,
   balancete: ResultadoBalancete,
+  opcoes: OpcoesAplicacao = {},
 ): ResultadoAplicacao {
   const diagnosticos: DiagnosticoDeMapeamento[] = [...validarMapeamento(mapeamento)];
   const pendentes = proporMapeamento(balancete.linhas, mapeamento);
@@ -324,10 +360,11 @@ export function aplicarMapeamento(
     });
   }
 
+  const colunasDoBalancete = balancete.perfil?.balancete?.colunas ?? null;
   const temColunasDeMovimento =
-    balancete.perfil !== null &&
-    balancete.perfil.colunas.debito !== null &&
-    balancete.perfil.colunas.credito !== null;
+    colunasDoBalancete !== null &&
+    colunasDoBalancete.debito !== null &&
+    colunasDoBalancete.credito !== null;
 
   const duvidas = niveisEmDuvida(pendentes, mapeamento.entradas);
   const estoque = {
@@ -356,14 +393,128 @@ export function aplicarMapeamento(
     PA: perdasDoNivel('PA', mapeamento, linhas, temColunasDeMovimento, diagnosticos),
   } as const;
 
-  if (diagnosticos.some(({ severidade }) => severidade === 'erro') || balancete.competencia === null) {
+  const razao = conferirRazao(opcoes.razao, balancete, diagnosticos);
+  const consumo = {
+    MP: consumoDe('MP', mapeamento, razao, diagnosticos),
+    PP: consumoDe('PP', mapeamento, razao, diagnosticos),
+    PA: consumoDe('PA', mapeamento, razao, diagnosticos),
+  } as const;
+
+  const custoMateriais = decidirCustoMateriais(consumo.MP, opcoes, diagnosticos);
+  const compras = razao === null ? null : comprasDeMp(mapeamento, razao);
+
+  if (
+    diagnosticos.some(({ severidade }) => severidade === 'erro') ||
+    balancete.competencia === null
+  ) {
     return { lancamento: null, diagnosticos, pendentes };
   }
 
   return {
-    lancamento: { competencia: balancete.competencia, estoque, cmv, receita, perdas },
+    lancamento: {
+      competencia: balancete.competencia,
+      estoque,
+      cmv,
+      receita,
+      perdas,
+      consumo,
+      custoMateriais,
+      compras,
+    },
     diagnosticos,
     pendentes,
   };
+}
+
+/**
+ * O razão só serve se for do mesmo período do balancete.
+ *
+ * Herdar a competência sem conferir é a saída que parece simplificar e é a
+ * pior: o arquivo errado passa a ser lido como se fosse o certo, e o resultado
+ * é um `PME_MP` plausível, defensável e falso.
+ */
+function conferirRazao(
+  razao: ResultadoRazao | undefined,
+  balancete: ResultadoBalancete,
+  diagnosticos: DiagnosticoDeMapeamento[],
+): ResultadoRazao | null {
+  if (razao === undefined) return null;
+  const doRazao = razao.competencia;
+  const doBalancete = balancete.competencia;
+
+  if (doRazao === null || doBalancete === null) {
+    diagnosticos.push({
+      severidade: 'erro',
+      codigo: 'competencia-indeterminada',
+      mensagem: 'Balancete e razão precisam dizer a que competência pertencem para serem cruzados.',
+      conta: null,
+    });
+    return null;
+  }
+  if (doRazao.ano !== doBalancete.ano || doRazao.mes !== doBalancete.mes) {
+    diagnosticos.push({
+      severidade: 'erro',
+      codigo: 'competencias-diferentes',
+      mensagem: `O balancete é de ${doBalancete.mes}/${doBalancete.ano} e o razão de ${doRazao.mes}/${doRazao.ano}.`,
+      conta: null,
+    });
+    return null;
+  }
+  return razao;
+}
+
+function consumoDe(
+  nivel: Nivel,
+  mapeamento: Mapeamento,
+  razao: ResultadoRazao | null,
+  diagnosticos: DiagnosticoDeMapeamento[],
+): ConsumoDeNivel {
+  if (razao === null) {
+    return { estado: 'indefinido', motivo: `Sem razão, o consumo de ${nivel} não é medido.` };
+  }
+  return consumoDoNivel(nivel, mapeamento, razao, diagnosticos);
+}
+
+/**
+ * Escolhe o custo de materiais e avisa quando ele é digitado.
+ *
+ * O RF-29 diz que o valor digitado à mão *"erra o PME de MP e contamina o teto
+ * de compra sem que nada acuse"*. Se o caminho manual é aceito — e é (ADR-0006)
+ * —, o "sem nada acusar" tem de deixar de ser verdade: daí o aviso permanente,
+ * que não é decoração, é o preço de aceitar o caminho.
+ */
+function decidirCustoMateriais(
+  consumoMp: ConsumoDeNivel,
+  opcoes: OpcoesAplicacao,
+  diagnosticos: DiagnosticoDeMapeamento[],
+): CustoDeMateriais {
+  const derivado = consumoMp.estado === 'lido' ? consumoMp.valor : null;
+  const informado = opcoes.custoMateriaisInformado ?? null;
+  const custo = confrontarCustoMateriais(derivado, informado, SEM_RAZAO);
+
+  if (custo.origem === 'informado') {
+    diagnosticos.push({
+      severidade: 'aviso',
+      codigo: 'custo-materiais-digitado',
+      mensagem:
+        'O custo de materiais foi digitado, não derivado do razão. Ele alimenta o PME de MP e o ' +
+        'teto de compras, e nada no balancete confirma esse número.',
+      conta: null,
+    });
+  }
+
+  if (custo.origem === 'conferido') {
+    const limite = opcoes.limiteDivergencia ?? LIMITE_DIVERGENCIA_CUSTO_MATERIAIS;
+    if (custo.divergencia > limite) {
+      diagnosticos.push({
+        severidade: 'aviso',
+        codigo: 'custo-materiais-divergente',
+        mensagem: `O custo de materiais digitado diverge ${(custo.divergencia * 100).toFixed(1)}% do derivado do razão; prevaleceu o derivado.`,
+        conta: null,
+      });
+    }
+  }
+
+  return custo;
 }
 

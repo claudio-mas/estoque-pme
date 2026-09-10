@@ -12,8 +12,8 @@
  * não deve quebrar este pacote sem entender por quê.
  */
 import { describe, expect, it } from 'vitest';
-import { lerBalancete } from '@estoque-pme/importador';
-import { calcularPme, cobertura } from '@estoque-pme/motor-calculo';
+import { lerBalancete, lerRazao } from '@estoque-pme/importador';
+import { calcularPme, cobertura, perdaMedida } from '@estoque-pme/motor-calculo';
 import type { Pme } from '@estoque-pme/motor-calculo';
 import { aplicarMapeamento } from '../src/index';
 import type { EntradaDeMapeamento, Mapeamento } from '../src/index';
@@ -39,6 +39,26 @@ const BALANCETE = latin1(
     '3.1.1.01;RECEITA DE VENDAS;0,00;0,00;38.000,00;38.000,00 C',
     '4.1.1.01;CUSTO DAS MERCADORIAS VENDIDAS;0,00;24.500,00;0,00;24.500,00 D',
     ';TOTAL DO ATIVO;45.000,00;;;48.500,00',
+  ].join('\r\n'),
+);
+
+/**
+ * O razão da conta de MP do mesmo período, e ele **fecha** contra o balancete:
+ * 11.000 + 19.500 − 18.500 = 12.000, que é o saldo atual lá.
+ */
+const RAZAO = latin1(
+  [
+    'RAZÃO ANALÍTICO',
+    'Alimentos Boa Safra Ltda',
+    'Período: 01/08/2025 a 31/08/2025',
+    '',
+    'Data;Histórico;Contrapartida;Débito;Crédito;Saldo',
+    'CONTA: 1.1.3.01 - MATÉRIAS-PRIMAS',
+    'Saldo anterior;;;;;11.000,00',
+    '05/08/2025;COMPRA NF 4471;2.1.1.01;19.500,00;;30.500,00',
+    '18/08/2025;REQUISIÇÃO OP-220;1.1.3.02;;17.891,36;12.608,64',
+    '31/08/2025;QUEBRA DE ESTOQUE;1.1.3.09;;608,64;12.000,00',
+    'Saldo atual;;;;;12.000,00',
   ].join('\r\n'),
 );
 
@@ -128,6 +148,38 @@ describe('do arquivo ao PME', () => {
     if (pme.estado !== 'calculado') throw new Error('esperava PME calculado');
     expect(pme.base).toBe('medio');
     expect(pme.dias).toBeCloseTo(17.66, 2);
+  });
+
+  it('com o razão, deriva consumo e compras, e o custo de materiais sai do arquivo', () => {
+    const comRazao = aplicarMapeamento(MAPEAMENTO, balancete, { razao: lerRazao(RAZAO) });
+    const lancamento = comRazao.lancamento;
+    if (lancamento === null) throw new Error('esperava lançamento');
+
+    // 17.891,36 para PP mais 608,64 de quebra: a perda **fica** dentro do
+    // consumo, que é o que a D7 exige.
+    expect(lancamento.consumo.MP).toEqual({ estado: 'lido', valor: 1_850_000n });
+    expect(lancamento.compras).toBe(1_950_000n);
+    expect(lancamento.custoMateriais).toEqual({ origem: 'derivado', valor: 1_850_000n });
+    expect(comRazao.diagnosticos.filter((d) => d.severidade === 'erro')).toEqual([]);
+  });
+
+  it('o razão só de MP não inventa consumo para PP e PA', () => {
+    const comRazao = aplicarMapeamento(MAPEAMENTO, balancete, { razao: lerRazao(RAZAO) });
+    expect(comRazao.lancamento?.consumo.PP.estado).toBe('indefinido');
+    expect(comRazao.lancamento?.consumo.PA.estado).toBe('indefinido');
+  });
+
+  it('fecha a fração da perda: numerador do balancete, denominador do razão', () => {
+    const comRazao = aplicarMapeamento(MAPEAMENTO, balancete, { razao: lerRazao(RAZAO) });
+    const lancamento = comRazao.lancamento;
+    if (lancamento === null) throw new Error('esperava lançamento');
+    const consumo = lancamento.consumo.MP;
+    if (consumo.estado !== 'lido') throw new Error('esperava consumo lido');
+
+    const perda = perdaMedida(lancamento.perdas.MP, consumo.valor);
+    expect(perda.estado).toBe('medido');
+    if (perda.estado !== 'medido') throw new Error('esperava perda medida');
+    expect(perda.taxa).toBeCloseTo(0.0329, 4);
   });
 
   it('a cobertura soma PP porque esta empresa o movimenta', () => {

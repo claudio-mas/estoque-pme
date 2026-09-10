@@ -42,8 +42,8 @@ describe('balancete completo', () => {
   const resultado = lerBalancete(latin1(BALANCETE));
 
   it('acha o cabeçalho depois do preâmbulo do relatório', () => {
-    expect(resultado.perfil?.linhaCabecalho).toBe(5);
-    expect(resultado.perfil?.colunas).toEqual({
+    expect(resultado.perfil?.balancete?.linhaCabecalho).toBe(5);
+    expect(resultado.perfil?.balancete?.colunas).toEqual({
       codigo: 0,
       descricao: 1,
       saldoAnterior: 2,
@@ -54,9 +54,9 @@ describe('balancete completo', () => {
   });
 
   it('detecta o dialeto e a codificação do arquivo', () => {
-    expect(resultado.perfil?.delimitador).toBe(';');
-    expect(resultado.perfil?.separadorDecimal).toBe(',');
-    expect(resultado.perfil?.codificacao).toBe('windows-1252');
+    expect(resultado.perfil?.dialeto.delimitador).toBe(';');
+    expect(resultado.perfil?.dialeto.separadorDecimal).toBe(',');
+    expect(resultado.perfil?.dialeto.codificacao).toBe('windows-1252');
   });
 
   it('preserva a acentuação da descrição da conta', () => {
@@ -262,7 +262,7 @@ describe('outros layouts de ERP', () => {
     const resultado = lerBalancete(
       arquivo(['Balancete AGOSTO/2025', 'Código;Nome da Conta;Saldo Final', '1.1.3.01;MP;12.000,00']),
     );
-    expect(resultado.perfil?.colunas.saldoAnterior).toBeNull();
+    expect(resultado.perfil?.balancete?.colunas.saldoAnterior).toBeNull();
     expect(resultado.linhas[0]?.saldoAnterior).toBeNull();
     expect(resultado.competencia).toEqual({ ano: 2025, mes: 8 });
   });

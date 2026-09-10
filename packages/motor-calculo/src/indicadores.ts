@@ -3,7 +3,7 @@
  */
 import { multiplicarPorTaxa, quociente } from './dinheiro';
 import { DIAS_DO_PERIODO } from './periodo';
-import type { Centavos, Cobertura, Nivel, Perda, Pme } from './tipos';
+import type { Centavos, Cobertura, CustoDeMateriais, Nivel, Perda, Pme } from './tipos';
 
 /**
  * Soma os PMEs dos níveis que a empresa movimenta.
@@ -82,6 +82,44 @@ export function custoMateriaisDerivado(
   mpFinal: Centavos,
 ): Centavos {
   return mpInicial + compras - mpFinal;
+}
+
+/**
+ * Quanto o custo de materiais derivado e o informado podem divergir (RF-29).
+ *
+ * Constante nomeada e sobrescrevível, como `LIMITE_DISPERSAO_PREMISSA`: o
+ * requisito diz "limite configurado (padrão 2%)", e literal espalhado pelo
+ * código é o que impede configurar.
+ */
+export const LIMITE_DIVERGENCIA_CUSTO_MATERIAIS = 0.02;
+
+/**
+ * Escolhe entre o custo de materiais derivado do razão e o digitado (RF-29).
+ *
+ * O derivado ganha sempre que existe — ele sai da identidade de saldo, o
+ * digitado sai da memória de alguém. Mas o digitado não é descartado quando há
+ * os dois: vira `conferido`, com a divergência à vista, porque é a divergência
+ * que o requisito manda mostrar.
+ *
+ * A divergência é medida contra o derivado, e não contra a média dos dois, para
+ * que o número tenha um significado dizível: *"o que foi digitado está x% acima
+ * do que o razão mostra"*.
+ */
+export function confrontarCustoMateriais(
+  derivado: Centavos | null,
+  informado: Centavos | null,
+  motivoSemDerivado = 'Sem razão da conta de MP, e nenhum valor informado.',
+): CustoDeMateriais {
+  if (derivado === null) {
+    return informado === null
+      ? { origem: 'indefinido', motivo: motivoSemDerivado }
+      : { origem: 'informado', valor: informado };
+  }
+  if (informado === null) return { origem: 'derivado', valor: derivado };
+
+  const diferenca = derivado > informado ? derivado - informado : informado - derivado;
+  const divergencia = derivado === 0n ? Number.POSITIVE_INFINITY : quociente(diferenca, derivado);
+  return { origem: 'conferido', valor: derivado, informado, divergencia };
 }
 
 /**

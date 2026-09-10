@@ -30,10 +30,18 @@ decisions in it are recorded as ADRs because each is expensive to reverse — th
 rather than balance (`0003`). Pending accounts never resolve silently: a level with a pending account reads
 `indefinido`, a level declared absent reads `ausente`, and neither is ever zero.
 
-Still missing on the ingestion path, in the order that matters: the razão reader that RF-29 and the loss
-indicator both need (D7), XLSX input via SheetJS — today only delimited text is read — and persistence with
-the idempotent `período + nível` key (RF-05), which is also where the mapping's versioning and the history
-recalculation live.
+The razão reader lives in `packages/importador` beside the balancete one (`razao.ts`), detecting which of the
+two real layouts it got — block per account, or account code repeated per line. `PerfilImportacao` is now
+decomposed into a **dialeto** (encoding, delimiter, decimal — a property of the ERP) plus one **layout per
+artefato**, so an ERP profile covers both files. The semantics stay in `mapeamento`: `consumo.ts` classifies
+each credit by its contrapartida, which is where RF-29's real difficulty is (`docs/adr/0004`) — the formula
+in the PRD collapses algebraically into "sum the credits". Contrapartida missing or unmapped means the
+consumo is `indefinido`, never approximated (`0005`), and the razão is optional with a permanent warning when
+the custo de materiais is typed instead (`0006`).
+
+Still missing on the ingestion path: XLSX input via SheetJS — today only delimited text is read — and
+persistence with the idempotent `período + nível` key (RF-05), which is also where the mapping's versioning
+and the history recalculation live.
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
