@@ -53,8 +53,25 @@ _Avoid_: parâmetro, configuração, assumption
 
 **Mapeamento de contas**:
 A correspondência entre o plano de contas da empresa e os papéis do modelo — MP, PP, PA, CMV, receita,
-contas de baixa. É por empresa e versionado, porque alterá-lo recalcula o histórico.
+contas de baixa. É por empresa e versionado, porque alterá-lo recalcula o histórico. Vale a **posse de
+subárvore**: a conta mapeada responde por todos os seus descendentes, de modo que cada real do balancete é
+contado por exatamente um mapeamento, ou por nenhum.
 _Avoid_: de-para, classificação, tradução de contas
+
+**Papel de conta**:
+O que uma conta significa para o modelo: saldo de estoque de um nível, baixa de um nível, CMV ou receita.
+Distinto do papel de coluna, que é o que o importador reconhece no cabeçalho do arquivo.
+_Avoid_: tipo de conta, categoria, classificação
+
+**Ignorada**:
+A conta que o gestor olhou e declarou irrelevante — caixa, fornecedores, imobilizado. Leva a subárvore
+junto, inclusive contas que apareçam nela depois.
+_Avoid_: excluída, desativada, fora do escopo
+
+**Sugestão**:
+O papel que o produto propõe para uma conta ainda pendente, junto com o motivo que o sustenta. Proposta é
+sempre proposta: nenhuma conta é classificada sem confirmação do gestor.
+_Avoid_: palpite, classificação automática, sugestão automática
 
 ### Fontes de dados
 
@@ -165,12 +182,18 @@ _Avoid_: validação, teste retroativo
 
 ### Estados que não são zero
 
-Três ausências diferentes, que o modelo distingue de propósito porque informá-las como zero seria pior do
+Quatro ausências diferentes, que o modelo distingue de propósito porque informá-las como zero seria pior do
 que não informar nada.
 
 **Ausente**:
 O nível que a empresa não movimenta — tipicamente PP. É decisão da empresa, não lacuna de dado.
 _Avoid_: vazio, zerado, sem estoque
+
+**Pendente**:
+A conta que ninguém classificou ainda. Não é o mesmo que ignorada: nível com conta pendente sai
+**indefinido**, nível sem conta alguma sai **ausente**, e confundir os dois esconde estoque atrás de uma
+decisão que não foi tomada.
+_Avoid_: não mapeada, sem classificação, nova
 
 **Não medido**:
 A perda de uma empresa sem conta de baixa mapeada. Ela deixa a quebra correr dentro do CMV; o produto não

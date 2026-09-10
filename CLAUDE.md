@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Two pure packages exist; no app and no database yet.
+Three pure packages exist; no app and no database yet.
 
 `packages/motor-calculo` is the dependency-free engine the whole stack decision rests on (D11) — the PME in
 both directions, the projection methods, the derived indicators and the budget ceilings, tested against the
@@ -23,9 +23,17 @@ profile of RF-24 — feed it back on the next file and nothing is re-detected. I
 bytes in, structure plus diagnostics out. **Reading the file is all it does** — the meaning of an account is
 the per-company mapping of RF-28, and is not the importer's job.
 
-Still missing on the ingestion path, in the order that matters: the account mapping (RF-28), the razão
-reader that RF-29 and the loss indicator both need (D7), XLSX input via SheetJS — today only delimited text
-is read — and persistence with the idempotent `período + nível` key (RF-05).
+`packages/mapeamento` resolves the meaning the importer deliberately refuses to (RF-28): the client's chart
+of accounts to `estoque`/`baixa` per level, CMV and receita, producing the `Lançamento` of the period. Three
+decisions in it are recorded as ADRs because each is expensive to reverse — the mapping has no vigência
+(`docs/adr/0001`), a mapped account owns its whole subtree (`0002`), and result accounts enter by movement
+rather than balance (`0003`). Pending accounts never resolve silently: a level with a pending account reads
+`indefinido`, a level declared absent reads `ausente`, and neither is ever zero.
+
+Still missing on the ingestion path, in the order that matters: the razão reader that RF-29 and the loss
+indicator both need (D7), XLSX input via SheetJS — today only delimited text is read — and persistence with
+the idempotent `período + nível` key (RF-05), which is also where the mapping's versioning and the history
+recalculation live.
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
@@ -48,6 +56,8 @@ Git repo on branch `main`, private remote at https://github.com/claudio-mas/esto
 | `prd-estoque-pme.html` | **PRD v1 draft.** Standalone page; also published (private) at https://claude.ai/code/artifact/f3014e5d-8402-4f67-bf4f-17851b823f90 |
 | `packages/motor-calculo/` | The calculation engine. `test/exemplo-trabalhado.test.ts` is the golden fixture |
 | `packages/importador/` | Balancete reader. `test/balancete.test.ts` carries a realistic Latin-1 fixture |
+| `packages/mapeamento/` | Account mapping (RF-28). `test/integracao.test.ts` runs real bytes through all three packages |
+| `docs/adr/` | Decisions that are expensive to reverse. D1–D11 stay here in this file; ADRs are for what came after |
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,
 or a second, separate artifact is created instead of updating the existing link.

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  // A declaração do importador entra porque a verificação atravessa as fontes
+  // dele: `normalizar` mora no mesmo arquivo que usa `TextDecoder`, e a
+  // declaração à mão que o importador faz dessa API não cruza a fronteira de
+  // pacote sozinha. Este pacote continua sem tocar em plataforma nenhuma.
+  "include": ["src", "test", "../importador/src/globais.d.ts"]
+}

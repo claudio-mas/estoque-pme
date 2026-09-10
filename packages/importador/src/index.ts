@@ -41,4 +41,4 @@ export type { Dialeto } from './dialeto';
 
 export { detectarCompetencia } from './competencia';
 export { reconhecerCabecalho } from './colunas';
-export type { CabecalhoReconhecido, Papel } from './colunas';
+export type { CabecalhoReconhecido, PapelDeColuna } from './colunas';

@@ -9,7 +9,7 @@
 import { normalizar } from './texto';
 import type { ColunasBalancete } from './tipos';
 
-export type Papel = keyof ColunasBalancete;
+export type PapelDeColuna = keyof ColunasBalancete;
 
 /**
  * Sinônimos por papel, do mais específico para o menos.
@@ -18,7 +18,7 @@ export type Papel = keyof ColunasBalancete;
  * casar pelo rótulo curto primeiro classificaria a coluna de abertura como a de
  * fechamento, e o PME sairia calculado sobre o saldo errado sem nada acusar.
  */
-const SINONIMOS: Readonly<Record<Papel, readonly string[]>> = {
+const SINONIMOS: Readonly<Record<PapelDeColuna, readonly string[]>> = {
   saldoAnterior: [
     'saldo anterior',
     'saldo anter',
@@ -63,16 +63,16 @@ const SINONIMOS: Readonly<Record<Papel, readonly string[]>> = {
 };
 
 /** Pares (papel, sinônimo) ordenados do rótulo mais longo para o mais curto. */
-const PARES: readonly (readonly [Papel, string])[] = Object.entries(SINONIMOS)
-  .flatMap(([papel, rotulos]) => rotulos.map((rotulo) => [papel as Papel, rotulo] as const))
+const PARES: readonly (readonly [PapelDeColuna, string])[] = Object.entries(SINONIMOS)
+  .flatMap(([papel, rotulos]) => rotulos.map((rotulo) => [papel as PapelDeColuna, rotulo] as const))
   .sort((a, b) => b[1].length - a[1].length);
 
 /** Papéis que uma célula de cabeçalho pode ter, do mais provável para o menos. */
-function papeisDe(celula: string): Papel[] {
+function papeisDe(celula: string): PapelDeColuna[] {
   const texto = normalizar(celula);
   if (texto === '') return [];
 
-  const encontrados: Papel[] = [];
+  const encontrados: PapelDeColuna[] = [];
   for (const [papel, rotulo] of PARES) {
     if (encontrados.includes(papel)) continue;
     if (texto === rotulo || texto.startsWith(`${rotulo} `) || texto.endsWith(` ${rotulo}`)) {
@@ -102,7 +102,7 @@ export interface CabecalhoReconhecido {
  * `codigo` disponível.
  */
 export function reconhecerCabecalho(campos: readonly string[]): CabecalhoReconhecido | null {
-  const atribuido = new Map<Papel, number>();
+  const atribuido = new Map<PapelDeColuna, number>();
 
   campos.forEach((celula, indice) => {
     for (const papel of papeisDe(celula)) {

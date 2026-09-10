@@ -6,7 +6,7 @@
  * pacote lança exceção por dado ruim — dado ruim vira `Diagnostico` e a leitura
  * continua. Exceção aqui é defeito de programação, não arquivo torto.
  */
-import type { Centavos } from '@estoque-pme/motor-calculo';
+import type { Centavos, Competencia } from '@estoque-pme/motor-calculo';
 
 export type Severidade = 'erro' | 'aviso' | 'info';
 
@@ -25,12 +25,13 @@ export interface Diagnostico {
   readonly coluna?: string;
 }
 
-/** Competência mensal: o balancete não traz data por linha, traz no cabeçalho. */
-export interface Competencia {
-  readonly ano: number;
-  /** 1 a 12. */
-  readonly mes: number;
-}
+/**
+ * Competência mensal: o balancete não traz data por linha, traz no cabeçalho.
+ *
+ * Definida no motor, porque é vocabulário do domínio e não da importação;
+ * reexportada aqui para quem consome só este pacote.
+ */
+export type { Competencia };
 
 export type Codificacao = 'utf-8' | 'windows-1252' | 'utf-16le' | 'utf-16be';
 export type Delimitador = ';' | ',' | '\t' | '|';

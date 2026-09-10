@@ -5,7 +5,17 @@
  * igual no navegador e no servidor, que é o que permite recalcular na edição
  * dentro do orçamento de 2 s do RNF sem duplicar a aritmética (D11).
  */
-export type { BaseEstoque, Centavos, Cobertura, Nivel, Perda, Pme } from './tipos';
+export type {
+  BaseEstoque,
+  Centavos,
+  Cobertura,
+  Competencia,
+  Lancamento,
+  Nivel,
+  Perda,
+  Pme,
+  SaldoDeNivel,
+} from './tipos';
 
 export { DIAS_DO_PERIODO } from './periodo';
 
