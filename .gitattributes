@@ -1,0 +1,16 @@
+# Terminações de linha: LF no repositório e na cópia de trabalho, em todas
+# as plataformas. Evita diffs fantasma entre Windows, macOS e CI.
+* text=auto eol=lf
+
+# Exceções — scripts que o Windows exige em CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binários: nunca normalizar nem tentar diff textual
+*.webp binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.pdf  binary
+*.xlsx binary
