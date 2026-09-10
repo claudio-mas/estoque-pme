@@ -4,9 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Pre-implementation. The PRD is complete and the stack is chosen (D11), but **no source code exists yet** —
-there is no build system, package manager or test runner, so there is nothing to build, lint or run. The
-repository holds documentation only.
+The calculation engine exists; nothing else does. `packages/motor-calculo` is the pure, dependency-free
+package the whole stack decision rests on (D11) — it holds the PME in both directions, the projection
+methods, the derived indicators and the budget ceilings, and it is tested against the PRD's worked example.
+There is no app, no database and no importer yet: the next thing to build is the ingestion of the balancete
+(RF-01/RF-28), which is where the real work is (D3).
+
+npm workspaces, Node 22+. Commands run from the repository root:
+
+| Command | What it does |
+|---------|--------------|
+| `npm install` | Installs the workspace. Dev dependencies only — the engine itself has none |
+| `npm test` | Vitest over every workspace |
+| `npm run typecheck` | `tsc --noEmit` over every workspace |
+| `npm test --workspace @estoque-pme/motor-calculo` | Just the engine |
+
+On Windows, run npm from PowerShell rather than Git Bash: package install scripts spawn `cmd.exe`, which does
+not inherit Git Bash's `PATH` and fails to find `node`.
 
 Git repo on branch `main`, private remote at https://github.com/claudio-mas/estoque-pme
 
@@ -15,13 +29,12 @@ Git repo on branch `main`, private remote at https://github.com/claudio-mas/esto
 | `estoque.txt` | Original product brief (Portuguese) — the source of truth for intent |
 | `estoque.webp` | Reference spreadsheet model the brief is based on — source of the formulas |
 | `prd-estoque-pme.html` | **PRD v1 draft.** Standalone page; also published (private) at https://claude.ai/code/artifact/f3014e5d-8402-4f67-bf4f-17851b823f90 |
-
-When the first code lands, replace this section with the real build/test/run commands.
+| `packages/motor-calculo/` | The calculation engine. `test/exemplo-trabalhado.test.ts` is the golden fixture |
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,
 or a second, separate artifact is created instead of updating the existing link.
 
-## Stack (chosen, not yet built)
+## Stack
 
 TypeScript end to end (D11). The deciding factor was not the ecosystem: the RNF budget of under 2 s to
 recalculate 18 months × 3 levels × 3 scenarios means the calculation engine should run **in the browser** for
