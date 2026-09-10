@@ -114,6 +114,14 @@ Custo_Materiais = MP_inicial + Compras - MP_final
 Entered by hand instead, it corrupts `PME_MP` and therefore `Compras_teto` with nothing to flag it — hence
 RF-29, which derives it where the razão exists and warns when the derived and entered figures diverge.
 
+**Known calendar bias — accepted, not fixed.** With `d` fixed at 30, month length leaks into the measured PME:
+on a constant daily flow February reads ~7% high and January ~3% low, a 10,7% spread. It propagates through
+the 3-month-mean premise and shifts projected inventory by roughly 2% — inside the 12% MAPE target, but it
+must not surprise anyone during backtesting. Using actual calendar days would remove it by construction, at
+the cost of implying a 365-day year and drifting 1,4% from the 360 convention the bank uses; that trade was
+judged not worth it. Keep `d` a **named constant, never a literal**, so the switch stays a one-line change —
+the formulas already cancel the factor.
+
 Projection methods: last realized value with a fixed growth rate, last observation, simple mean of last N,
 weighted mean, linear trend, same month last year (seasonal), manual. Default is the growth rate for the cost
 lines — that is what the reference model actually does — and the 3-month mean for PME, with a warning when
@@ -121,10 +129,10 @@ dispersion across those months exceeds 15%.
 
 ### Notes that are easy to get wrong
 
-- **The reference spreadsheet uses a different time base.** It applies a 360 factor to a *monthly* cost flow,
-  producing PME values around 200 that are not calendar days. Both directions are exact inverses, so the factor
-  cancels and the choice is presentational — v1 shows real days (D4). Expect a scale mismatch when comparing
-  against a client's existing spreadsheet, and explain it rather than "fixing" the formula.
+- **The reference spreadsheet's PME is exactly 12x too large.** It applies a 360 factor to a *monthly* cost
+  flow, so it annualises twice. 205,71 / 12 = 17,14; 221,54 / 12 = 18,46; 67,20 / 12 = 5,60 — each matches the
+  v1 figure exactly. The conversion for a client arriving from that spreadsheet is therefore just **divide by
+  12**. Do not "fix" the formula to match their numbers.
 - **The reference spreadsheet's "Média" column is not an average — it is the first forecast period.** Its cost
   rows are the last realized month compounded at exactly 2%/month: 19.500 → 19.890 → 20.288 → 20.694 → 21.107
   → 21.530 → 21.960, and the same chain for CMV from 24.500. Verified in all twelve forecast cells. The PME
@@ -140,9 +148,9 @@ dispersion across those months exceeds 15%.
 
 ## Decisions taken (D1–D8)
 
-These closed the PRD draft and constrain implementation. **D1, D2, D3 and D8 are confirmed; D4–D7 are pending
-stakeholder validation**, and none of those four changes the product itself — only the implementation. They
-appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
+These closed the PRD draft and constrain implementation. **D1–D4 and D8 are confirmed; D5, D6 and D7 are
+pending stakeholder validation**, and none of those three changes the product itself — only the
+implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after the draft).
 
 1. **D1 — Aggregate by level, not per SKU.** *Confirmed.* v1 works in R$ over consolidated MP/PP/PA, with no
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
@@ -161,7 +169,10 @@ appear as P1–P7 in the PRD (D8 has no P counterpart — it was decided after t
    and it is the one artifact every Brazilian SME produces monthly regardless of ERP. A blank template survives
    only as an escape hatch. Direct ERP integration stays in v2: the hard part is account semantics, not
    transport, and it has to be solved either way. Import stays idempotent on the `período + nível` key.
-4. **D4 — PME presented in real days (d = 30)**, not the reference model's 360-over-monthly-flow.
+4. **D4 — PME in real days, `d = 30`.** *Confirmed.* Not a readability choice: `d = 30` on a monthly flow is
+   identical to the accounting convention of 360 days on an annual flow — `Estoque / (12 * CMV_mensal) * 360 =
+   Estoque / CMV_mensal * 30` — so the product agrees with the bank, the accountant and the textbook, all of
+   which work in the 360-day commercial year. The reference model's error was applying 360 to a monthly flow.
 5. **D5 — Average inventory by default**, degrading to closing balance when no opening balance exists.
 6. **D6 — PP is optional**, per the domain note above.
 7. **D7 — Loss is a parametric percentage** applied to consumption per level. The product quantifies the cost

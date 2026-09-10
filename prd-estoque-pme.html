@@ -83,6 +83,7 @@ body{
 /* ---------- shared type ---------- */
 h1,h2,h3,h4{font-family:"Archivo",system-ui,sans-serif;text-wrap:balance;margin:0}
 .mono{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+code{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;font-size:.92em}
 .eyebrow{
   font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   font-size:.7rem;font-weight:500;text-transform:uppercase;letter-spacing:.16em;
@@ -503,7 +504,7 @@ Produção_teto    = PA_alvo <span class="op">−</span> PA_inicial <span class=
                    <span class="op">onde PA_alvo = CMV × PME_alvo / d</span></code>
       </div>
       <div class="slab-note">
-        <b>Sobre a base temporal.</b> A planilha de referência aplica o fator 360 sobre um fluxo de custo mensal, o que produz PMEs na casa de 200 — números que não são dias de calendário. Como as duas direções são inversas exatas, o fator se cancela e a escolha é de apresentação. A v1 adota <b>d = dias do período (30 no mês)</b>, exibindo o PME em dias reais: 17,8 dias de matéria-prima é um número que o gestor confere contra a própria operação; 207 não é.
+        <b>Sobre a base temporal.</b> <b>d = 30</b> sobre fluxo mensal é idêntico à convenção contábil de 360 dias sobre fluxo anual — <b>Estoque ÷ (12 × CMV_mensal) × 360 = Estoque ÷ CMV_mensal × 30</b>. Não é escolha de legibilidade: é o que faz o produto concordar com o banco, o contador e o livro-texto, que trabalham no ano comercial. A planilha de referência aplica 360 a um fluxo mensal e portanto anualiza duas vezes — seus PMEs são exatamente <b>12× maiores</b> que os corretos, o que torna a conversão para quem vem dela trivial: <b>divida por 12</b>.
       </div>
     </div>
 
@@ -512,6 +513,7 @@ Produção_teto    = PA_alvo <span class="op">−</span> PA_inicial <span class=
       <li><b>Estoque médio</b> = (saldo inicial + saldo final) ÷ 2<span>Quando só houver saldo final disponível, usa-se o saldo final e o relatório sinaliza a substituição. A planilha de referência usa saldo final — conferido: 10.000 ÷ 17.500 × 360 = 205,71.</span></li>
       <li><b>Métodos de projeção da premissa</b><span>Último realizado com taxa de crescimento fixa; última observação; média simples dos últimos N; média ponderada; tendência linear; mesmo mês do ano anterior (sazonal); manual. Padrão: taxa de crescimento para as linhas de custo — é o que o modelo de referência faz — e média dos últimos 3 meses para o PME, com aviso quando a dispersão entre eles passar de 15%.</span></li>
       <li><b>Perda</b> entra como percentual por nível aplicado ao consumo<span>Cobre a parte financeira da promessa de reduzir perdas. O controle físico de validade e lote fica fora da v1.</span></li>
+      <li><b>Viés de calendário</b> — limitação conhecida, aceita na v1<span>Com <code>d</code> fixo em 30, o comprimento do mês entra no PME apurado. Com fluxo diário constante, fevereiro aparece 7% acima da verdade e janeiro 3% abaixo — amplitude de 10,7%. O viés propaga para a premissa de média de 3 meses e desloca o estoque projetado em cerca de 2%, dentro da meta de 12% de MAPE, mas não pode surpreender ninguém no backtesting. Usar dias corridos eliminaria o viés por construção, ao custo de implicar base anual de 365 e afastar-se 1,4% da convenção de 360 que o banco usa — troca que não compensa. Por isso <code>d</code> é constante nomeada no modelo, nunca literal: se o backtesting mostrar que o efeito importa, mudar é uma linha, porque as fórmulas já cancelam o fator.</span></li>
     </ul>
 
     <h3>O que a planilha de referência realmente faz</h3>
@@ -575,7 +577,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
   <div class="rail">07</div>
   <div>
     <h2>Premissas assumidas</h2>
-    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1, P2 e P3 estão confirmadas</b>; P4 a P7 ainda precisam de validação antes do desenvolvimento, e nenhuma delas altera o produto — apenas a implementação.</p>
+    <p class="lede">Decisões tomadas para fechar o rascunho. <b>P1 a P4 estão confirmadas</b>; P5 a P7 ainda precisam de validação antes do desenvolvimento, e nenhuma delas altera o produto — apenas a implementação.</p>
     <div class="assumps">
       <div class="assump">
         <h4><span class="n">P1</span> O escopo é agregado por nível, não por SKU<span class="pri">Confirmada</span></h4>
@@ -593,9 +595,9 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
         <p class="risk"><b>Efeito</b> A parte difícil do problema é o mapeamento do plano de contas, não o transporte do arquivo — e ela existe nos dois caminhos. Resolver planilha primeiro obriga a enfrentá-la antes; depois disso, acrescentar transporte é incremental. Falta um teste antes de construir o importador: pegar um balancete real e cronometrar quanto leva até a primeira projeção.</p>
       </div>
       <div class="assump">
-        <h4><span class="n">P4</span> PME apresentado em dias reais (d = 30)</h4>
-        <p>Em vez do fator 360 sobre fluxo mensal da planilha de referência. Matematicamente equivalente, mais legível.</p>
-        <p class="risk"><b>Risco</b> Quem vem da planilha estranha a mudança de escala. Mitigado por uma nota de conversão no relatório.</p>
+        <h4><span class="n">P4</span> PME em dias reais, com d = 30<span class="pri">Confirmada</span></h4>
+        <p>Não por legibilidade: <b>d = 30 sobre fluxo mensal é idêntico à convenção de 360 dias sobre fluxo anual</b>, então o produto concorda com o banco, o contador e o livro-texto, que trabalham no ano comercial. A planilha de referência aplica 360 a um fluxo mensal e anualiza duas vezes — seus PMEs são exatamente 12× maiores que os corretos.</p>
+        <p class="risk"><b>Efeito</b> Para quem vem da planilha antiga, a conversão é <b>dividir por 12</b>. Resta um viés de calendário conhecido e aceito, de cerca de 2% no estoque projetado, documentado na seção 5.</p>
       </div>
       <div class="assump">
         <h4><span class="n">P5</span> Estoque médio como padrão, saldo final como alternativa</h4>
@@ -738,7 +740,7 @@ CMV                  24.500 <span class="op">(ago)</span> → 24.990 → 25.490 
 
 <footer>
   Rascunho de PRD · v1 — planejamento financeiro · Setembro de 2026<br>
-  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P3 confirmadas; P4–P7 pendentes de validação.
+  Fontes: estoque.txt (brief) e estoque.webp (modelo de referência). P1–P4 confirmadas; P5–P7 pendentes de validação.
 </footer>
 
 </div>
