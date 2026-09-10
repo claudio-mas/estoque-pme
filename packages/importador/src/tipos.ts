@@ -83,12 +83,20 @@ export interface ColunasRazao {
 /**
  * O dialeto de um sistema de origem: a metade do perfil que é do **ERP**, não
  * do arquivo. Um ERP não exporta o balancete em Latin-1 e o razão em UTF-8.
+ *
+ * O **formato** faz parte do dialeto porque é escolha do ERP, não do arquivo:
+ * quem exporta planilha exporta planilha nos dois artefatos. E em planilha não
+ * existe codificação nem delimitador — a união evita guardar campo que só
+ * poderia ser preenchido com mentira.
  */
-export interface Dialeto {
-  readonly codificacao: Codificacao;
-  readonly delimitador: Delimitador;
-  readonly separadorDecimal: SeparadorDecimal;
-}
+export type Dialeto =
+  | {
+      readonly formato: 'delimitado';
+      readonly codificacao: Codificacao;
+      readonly delimitador: Delimitador;
+      readonly separadorDecimal: SeparadorDecimal;
+    }
+  | { readonly formato: 'planilha'; readonly separadorDecimal: SeparadorDecimal };
 
 /** A metade do perfil que é do **arquivo**: onde estão as colunas e quais são. */
 export interface LayoutDeBalancete {

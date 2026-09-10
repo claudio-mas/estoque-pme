@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@estoque-pme/motor-calculo": "0.1.0"
+    "@estoque-pme/motor-calculo": "0.1.0",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

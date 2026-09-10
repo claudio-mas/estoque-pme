@@ -160,7 +160,12 @@ describe('perfil de importação (RF-24)', () => {
 
   it('perfil que só conhece o balancete não atrapalha: o dialeto vale, o layout não', () => {
     const soBalancete: PerfilImportacao = {
-      dialeto: { codificacao: 'windows-1252', delimitador: ';', separadorDecimal: ',' },
+      dialeto: {
+        formato: 'delimitado',
+        codificacao: 'windows-1252',
+        delimitador: ';',
+        separadorDecimal: ',',
+      },
       balancete: {
         linhaCabecalho: 5,
         colunas: {

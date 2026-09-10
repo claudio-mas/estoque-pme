@@ -14,9 +14,12 @@ import { detectarCompetencia } from './competencia';
 import { reconhecerCabecalho } from './colunas';
 import { decodificar, normalizar } from './texto';
 import { CASAS_DECIMAIS_ESPERADAS, casasDecimais, lerValor } from './numero';
+import { DECIMAL_DA_PLANILHA } from './aba';
+import type { Aba, Planilha } from './aba';
 import type {
   ColunasBalancete,
   Competencia,
+  Dialeto,
   Diagnostico,
   LinhaBalancete,
   PerfilImportacao,
@@ -42,9 +45,12 @@ export interface OpcoesBalancete {
 export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): ResultadoBalancete {
   const diagnosticos: Diagnostico[] = [];
   const { perfil } = opcoes;
+  // Perfil de planilha não descreve arquivo delimitado: a codificação e o
+  // delimitador voltam a ser detectados, e só o layout aproveita.
+  const dialetoConhecido = perfil?.dialeto.formato === 'delimitado' ? perfil.dialeto : undefined;
 
-  const { texto, codificacao } = decodificar(bytes, perfil?.dialeto.codificacao);
-  if (codificacao !== 'utf-8' && perfil === undefined) {
+  const { texto, codificacao } = decodificar(bytes, dialetoConhecido?.codificacao);
+  if (codificacao !== 'utf-8' && dialetoConhecido === undefined) {
     diagnosticos.push({
       severidade: 'info',
       codigo: 'codificacao-detectada',
@@ -53,15 +59,71 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
     });
   }
 
-  const dialeto =
-    perfil !== undefined
-      ? {
-          delimitador: perfil.dialeto.delimitador,
-          separadorDecimal: perfil.dialeto.separadorDecimal,
-        }
-      : detectarDialeto(texto);
+  const delimitado = dialetoConhecido ?? detectarDialeto(texto);
+  const registros = lerCsv(texto, delimitado.delimitador);
 
-  const registros = lerCsv(texto, dialeto.delimitador);
+  return montarBalancete(
+    registros,
+    {
+      formato: 'delimitado',
+      codificacao,
+      delimitador: delimitado.delimitador,
+      separadorDecimal: delimitado.separadorDecimal,
+    },
+    opcoes,
+    diagnosticos,
+  );
+}
+
+/**
+ * Lê um balancete que veio de uma planilha (RF-01).
+ *
+ * Recebendo a `Planilha` inteira, escolhe a aba cujo cabeçalho reconhece mais
+ * papéis — pasta de trabalho com aba de capa e aba de dados é o caso comum, e
+ * fazer o gestor apontar qual é seria devolver a ele uma pergunta que o produto
+ * responde melhor.
+ */
+export function lerBalanceteDeAba(
+  fonte: Aba | Planilha,
+  opcoes: OpcoesBalancete = {},
+): ResultadoBalancete {
+  const aba = 'abas' in fonte ? melhorAba(fonte) : fonte;
+  return montarBalancete(
+    aba.registros,
+    { formato: 'planilha', separadorDecimal: DECIMAL_DA_PLANILHA },
+    opcoes,
+    [],
+  );
+}
+
+/** A aba cujo cabeçalho reconhece mais papéis de coluna de balancete. */
+function melhorAba(planilha: Planilha): Aba {
+  let melhor: Aba | null = null;
+  let melhorNota = -1;
+
+  for (const aba of planilha.abas) {
+    const ate = Math.min(aba.registros.length, LINHAS_ATE_O_CABECALHO);
+    for (let i = 0; i < ate; i += 1) {
+      const registro = aba.registros[i] as RegistroCsv;
+      if (vazio(registro)) continue;
+      const reconhecido = reconhecerCabecalho(registro.campos);
+      if (reconhecido !== null && reconhecido.nota > melhorNota) {
+        melhor = aba;
+        melhorNota = reconhecido.nota;
+      }
+    }
+  }
+
+  return melhor ?? (planilha.abas[0] ?? { nome: '', registros: [] });
+}
+
+function montarBalancete(
+  registros: readonly RegistroCsv[],
+  dialeto: Dialeto,
+  opcoes: OpcoesBalancete,
+  diagnosticos: Diagnostico[],
+): ResultadoBalancete {
+  const { perfil } = opcoes;
   const cabecalho = localizarCabecalho(registros, perfil);
 
   if (cabecalho === null) {
@@ -111,15 +173,7 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
     competencia,
     linhas: marcarSinteticas(linhas),
     diagnosticos,
-    perfil: {
-      dialeto: {
-        codificacao,
-        delimitador: dialeto.delimitador,
-        separadorDecimal: dialeto.separadorDecimal,
-      },
-      balancete: { linhaCabecalho: indice, colunas },
-      razao: null,
-    },
+    perfil: { dialeto, balancete: { linhaCabecalho: indice, colunas }, razao: null },
   };
 }
 

@@ -54,9 +54,12 @@ describe('balancete completo', () => {
   });
 
   it('detecta o dialeto e a codificação do arquivo', () => {
-    expect(resultado.perfil?.dialeto.delimitador).toBe(';');
-    expect(resultado.perfil?.dialeto.separadorDecimal).toBe(',');
-    expect(resultado.perfil?.dialeto.codificacao).toBe('windows-1252');
+    expect(resultado.perfil?.dialeto).toEqual({
+      formato: 'delimitado',
+      codificacao: 'windows-1252',
+      delimitador: ';',
+      separadorDecimal: ',',
+    });
   });
 
   it('preserva a acentuação da descrição da conta', () => {

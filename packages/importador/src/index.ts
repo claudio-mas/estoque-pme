@@ -32,10 +32,10 @@ export type {
   Severidade,
 } from './tipos';
 
-export { lerBalancete } from './balancete';
+export { lerBalancete, lerBalanceteDeAba } from './balancete';
 export type { OpcoesBalancete } from './balancete';
 
-export { lerRazao } from './razao';
+export { lerRazao, lerRazaoDeAba } from './razao';
 export type { OpcoesRazao } from './razao';
 
 export { decodificar, normalizar } from './texto';
@@ -43,6 +43,10 @@ export type { TextoDecodificado } from './texto';
 
 export { CASAS_DECIMAIS_ESPERADAS, casasDecimais, lerValor } from './numero';
 export type { Natureza, ValorLido } from './numero';
+
+export { lerPlanilha } from './planilha';
+export { DECIMAL_DA_PLANILHA } from './aba';
+export type { Aba, Planilha } from './aba';
 
 export { lerCsv, vazio } from './csv';
 export type { RegistroCsv } from './csv';

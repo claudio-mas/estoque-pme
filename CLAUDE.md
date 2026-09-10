@@ -39,15 +39,20 @@ in the PRD collapses algebraically into "sum the credits". Contrapartida missing
 consumo is `indefinido`, never approximated (`0005`), and the razão is optional with a permanent warning when
 the custo de materiais is typed instead (`0006`).
 
-Still missing on the ingestion path: XLSX input via SheetJS — today only delimited text is read — and
-persistence with the idempotent `período + nível` key (RF-05), which is also where the mapping's versioning
-and the history recalculation live.
+XLSX input works for both artefacts (`planilha.ts`), read with **ExcelJS** rather than SheetJS — the CVE
+check the stack notes demanded inverted that choice (`docs/adr/0007`). A spreadsheet is a *front end*: it is
+converted to the same `RegistroCsv` the CSV reader produces, so header recognition, layout detection and
+column roles are the one implementation, and balancete and razão both got XLSX for free. `Dialeto` is now a
+union — a delimited file has an encoding and a delimiter, a spreadsheet has neither.
+
+Still missing on the ingestion path: persistence with the idempotent `período + nível` key (RF-05), which is
+also where the mapping's versioning and the history recalculation live.
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
 | Command | What it does |
 |---------|--------------|
-| `npm install` | Installs the workspace. Dev dependencies only — the engine itself has none |
+| `npm install` | Installs the workspace. Only `importador` has a runtime dependency (ExcelJS); the engine has none |
 | `npm test` | Vitest over every workspace |
 | `npm run typecheck` | `tsc --noEmit` over every workspace |
 | `npm test --workspace @estoque-pme/motor-calculo` | One package only (`@estoque-pme/importador` for the other) |
@@ -88,7 +93,7 @@ example, and survive a change of anything else. Everything in the table below is
 | Database | PostgreSQL with **Row-Level Security** — tenant isolation enforced in the DB, not trusted to each query |
 | ORM | Drizzle — typed and close to SQL, which RLS and window functions will need |
 | Auth | Auth.js, self-hosted — PII stays in our own Postgres |
-| Read spreadsheets | SheetJS |
+| Read spreadsheets | ExcelJS — SheetJS was the plan until the CVE check inverted it (`docs/adr/0007`) |
 | Write XLSX | ExcelJS |
 | PDF | Playwright over the HTML report route — one layout, not two |
 | Grid | TanStack Table (headless) — editable cells with overwrite marking is RF-11 |
@@ -108,8 +113,10 @@ the storage boundary.
   table-heavy.
 - **Billing by boleto and PIX**, not cards: Brazilian SMEs do not pay for SaaS on a corporate card. Asaas, Iugu
   or Pagar.me. Decide at the first paying customer, not before.
-- **SheetJS**: check the distribution channel and CVE history at install time — the npm package went stale and
-  official distribution moved to the project's own registry.
+- **SheetJS**: *checked, and the check inverted the choice* — see `docs/adr/0007`. The npm `xlsx` is stuck at
+  0.18.5 with two unfixed CVEs, one of them prototype pollution via a crafted file, which is this product's
+  actual threat model. Fixed builds live only on the project's own CDN. We read XLSX with **ExcelJS**, which
+  was already in the stack for writing it.
 
 ### Deliberately excluded
 

@@ -18,11 +18,14 @@ import { detectarCompetencia } from './competencia';
 import { reconhecerCabecalhoDeRazao } from './colunas-razao';
 import { decodificar, normalizar } from './texto';
 import { lerValor } from './numero';
+import { DECIMAL_DA_PLANILHA } from './aba';
+import type { Aba, Planilha } from './aba';
 import type {
   ColunasRazao,
   Competencia,
   ContaRazao,
   DelimitacaoDeRazao,
+  Dialeto,
   Diagnostico,
   LancamentoRazao,
   PerfilImportacao,
@@ -48,19 +51,64 @@ export interface OpcoesRazao {
 }
 
 export function lerRazao(bytes: Uint8Array, opcoes: OpcoesRazao = {}): ResultadoRazao {
+  const dialetoConhecido = opcoes.perfil?.dialeto.formato === 'delimitado' ? opcoes.perfil.dialeto : undefined;
+  const { texto, codificacao } = decodificar(bytes, dialetoConhecido?.codificacao);
+  const delimitado = dialetoConhecido ?? detectarDialeto(texto);
+
+  return montarRazao(
+    lerCsv(texto, delimitado.delimitador),
+    {
+      formato: 'delimitado',
+      codificacao,
+      delimitador: delimitado.delimitador,
+      separadorDecimal: delimitado.separadorDecimal,
+    },
+    opcoes,
+  );
+}
+
+/**
+ * Lê um razão que veio de uma planilha (RF-01).
+ *
+ * Recebendo a `Planilha` inteira, escolhe a aba cujo cabeçalho reconhece mais
+ * colunas de razão — mesma regra do balancete, e pelo mesmo motivo.
+ */
+export function lerRazaoDeAba(fonte: Aba | Planilha, opcoes: OpcoesRazao = {}): ResultadoRazao {
+  const aba = 'abas' in fonte ? melhorAba(fonte) : fonte;
+  return montarRazao(
+    aba.registros,
+    { formato: 'planilha', separadorDecimal: DECIMAL_DA_PLANILHA },
+    opcoes,
+  );
+}
+
+function melhorAba(planilha: Planilha): Aba {
+  let melhor: Aba | null = null;
+  let melhorNota = -1;
+
+  for (const aba of planilha.abas) {
+    const ate = Math.min(aba.registros.length, LINHAS_ATE_O_CABECALHO);
+    for (let i = 0; i < ate; i += 1) {
+      const registro = aba.registros[i] as RegistroCsv;
+      if (vazio(registro)) continue;
+      const reconhecido = reconhecerCabecalhoDeRazao(registro.campos);
+      if (reconhecido !== null && reconhecido.nota > melhorNota) {
+        melhor = aba;
+        melhorNota = reconhecido.nota;
+      }
+    }
+  }
+
+  return melhor ?? (planilha.abas[0] ?? { nome: '', registros: [] });
+}
+
+function montarRazao(
+  registros: readonly RegistroCsv[],
+  dialeto: Dialeto,
+  opcoes: OpcoesRazao,
+): ResultadoRazao {
   const diagnosticos: Diagnostico[] = [];
   const { perfil } = opcoes;
-
-  const { texto, codificacao } = decodificar(bytes, perfil?.dialeto.codificacao);
-  const dialeto =
-    perfil !== undefined
-      ? {
-          delimitador: perfil.dialeto.delimitador,
-          separadorDecimal: perfil.dialeto.separadorDecimal,
-        }
-      : detectarDialeto(texto);
-
-  const registros = lerCsv(texto, dialeto.delimitador);
   const cabecalho = localizarCabecalho(registros, perfil);
 
   if (cabecalho === null) {
@@ -95,10 +143,11 @@ export function lerRazao(bytes: Uint8Array, opcoes: OpcoesRazao = {}): Resultado
   }
 
   const corpo = registros.slice(indice + 1);
+  const decimal = dialeto.separadorDecimal;
   const contas =
     delimitacao === 'plano'
-      ? extrairPlano(corpo, colunas, dialeto.separadorDecimal, diagnosticos)
-      : extrairBlocos(corpo, colunas, dialeto.separadorDecimal, diagnosticos);
+      ? extrairPlano(corpo, colunas, decimal, diagnosticos)
+      : extrairBlocos(corpo, colunas, decimal, diagnosticos);
 
   if (contas.length === 0) {
     diagnosticos.push({
@@ -115,15 +164,7 @@ export function lerRazao(bytes: Uint8Array, opcoes: OpcoesRazao = {}): Resultado
     competencia,
     contas,
     diagnosticos,
-    perfil: {
-      dialeto: {
-        codificacao,
-        delimitador: dialeto.delimitador,
-        separadorDecimal: dialeto.separadorDecimal,
-      },
-      balancete: null,
-      razao: { linhaCabecalho: indice, delimitacao, colunas },
-    },
+    perfil: { dialeto, balancete: null, razao: { linhaCabecalho: indice, delimitacao, colunas } },
   };
 }
 

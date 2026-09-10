@@ -182,7 +182,12 @@ describe('obrigatoriedade', () => {
 describe('aplicação', () => {
   const competencia = { ano: 2025, mes: 8 };
   const perfil = {
-    dialeto: { codificacao: 'utf-8', delimitador: ';', separadorDecimal: ',' },
+    dialeto: {
+      formato: 'delimitado',
+      codificacao: 'utf-8',
+      delimitador: ';',
+      separadorDecimal: ',',
+    },
     balancete: {
       linhaCabecalho: 0,
       colunas: { codigo: 0, descricao: 1, saldoAnterior: 2, debito: 3, credito: 4, saldoAtual: 5 },
