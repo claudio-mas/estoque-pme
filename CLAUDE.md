@@ -29,8 +29,8 @@ monthly closing cycle. Primary user is the controller / administrative-financial
 between the 5th and 10th business day, which is when the product is actually used.
 
 In scope for v1: inventory value by level, PME apuration and projection, cost/CMV forecasting, financial
-cycle and working-capital requirement, comparable scenarios, sensitivity on PME, backtesting, XLSX/PDF export,
-multi-company access.
+cycle and working-capital requirement, purchase budget ceiling, comparable scenarios, sensitivity on PME,
+backtesting, XLSX/PDF export, multi-company access.
 
 Out of scope for v1 (deliberate — see D1): per-SKU purchase/production suggestion (that is an MRP), lot/expiry/FEFO
 control, direct ERP integration (v2; v1 ingests spreadsheets), costing and standard-cost formation, multi-currency.
@@ -83,7 +83,15 @@ Cobertura_dias   = PME_MP + PME_PP + PME_PA
 Ciclo_financeiro = Cobertura_dias + PMR - PMP
 NCG              = Estoque + (Receita * PMR / d) - (Compras * PMP / d)
 Custo_ajustado   = Custo_Materiais / (1 - perda%)
+
+Compras_teto     = MP_alvo - MP_inicial + Custo_Materiais
+                   where MP_alvo = Custo_Materiais * PME_alvo / d
 ```
+
+`Compras_teto` (PRD RF-26) is the purchase **budget ceiling** — how much material spend the cash position
+supports in a period, in R$ at the aggregate level. It falls straight out of the balance identity
+`MP_final = MP_inicial + Compras - Consumo`, so it needs no SKU and does not breach D1. Never present it as a
+purchase suggestion or order: the product says *how much*, never *what* or *when*.
 
 `Estoque_médio` = (opening balance + closing balance) / 2, falling back to the closing balance when no opening
 balance exists — and the report must say which one it used (D5).
@@ -122,6 +130,8 @@ implementation. They appear as P1–P7 in the PRD (D8 has no P counterpart — i
    item, quantity, or unit price. "How much to buy and produce" is out of v1 by decision: the data it needs
    (item, lead time, minimum lot, safety stock) is exactly what the PME model does not use, and collecting it
    would sink the 30-minute onboarding target. Do not reintroduce SKU-level fields into v1 models or importers.
+   The boundary: the purchase budget ceiling (`Compras_teto`, RF-26) is in scope because it is a single R$
+   figure derived from the balance identity; a per-item purchase suggestion is not.
 2. **D2 — Revenue and financial cycle are in v1.** *Confirmed.* Two of the brief's five questions (inventory
    vs. sales, working-capital requirement) cannot be answered from cost and CMV alone, so `receita` is an
    input and PMR/PMP are scenario parameters (PRD RF-25), overridable per period. They are entered by the
