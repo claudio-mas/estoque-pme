@@ -4,6 +4,8 @@
 import { multiplicarPorTaxa, quociente } from './dinheiro';
 import { DIAS_DO_PERIODO } from './periodo';
 import type { Centavos, Cobertura, CustoDeMateriais, Nivel, Perda, Pme } from './tipos';
+import { motivoDoNivel } from './diagnostico';
+import type { Motivo } from './diagnostico';
 
 /**
  * Soma os PMEs dos níveis que a empresa movimenta.
@@ -20,14 +22,17 @@ export function cobertura(pmes: Readonly<Partial<Record<Nivel, Pme>>>): Cobertur
     const pme = pmes[nivel];
     if (pme === undefined || pme.estado === 'ausente') continue;
     if (pme.estado === 'indefinido') {
-      return { estado: 'indefinido', motivo: `PME de ${nivel} indefinido: ${pme.motivo}` };
+      return { estado: 'indefinido', motivo: motivoDoNivel('pme-indefinido', nivel) };
     }
     dias += pme.dias;
     niveis.push(nivel);
   }
 
   if (niveis.length === 0) {
-    return { estado: 'indefinido', motivo: 'nenhum nível movimentado no período' };
+    return {
+      estado: 'indefinido',
+      motivo: { codigo: 'nenhum-nivel-movimentado', ancora: { tipo: 'mapeamento' } },
+    };
   }
   return { estado: 'calculado', dias, niveis };
 }
@@ -108,7 +113,10 @@ export const LIMITE_DIVERGENCIA_CUSTO_MATERIAIS = 0.02;
 export function confrontarCustoMateriais(
   derivado: Centavos | null,
   informado: Centavos | null,
-  motivoSemDerivado = 'Sem razão da conta de MP, e nenhum valor informado.',
+  motivoSemDerivado: Motivo = {
+    codigo: 'sem-razao-nem-informado',
+    ancora: { tipo: 'nivel', nivel: 'MP' },
+  },
 ): CustoDeMateriais {
   if (derivado === null) {
     return informado === null

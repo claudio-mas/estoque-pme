@@ -7,9 +7,12 @@
  */
 import { DIAS_DO_PERIODO } from './periodo';
 import { media, multiplicarPorTaxa, quociente } from './dinheiro';
-import type { BaseEstoque, Centavos, Pme } from './tipos';
+import type { BaseEstoque, Centavos, Nivel, Pme } from './tipos';
+import { motivoDoNivel } from './diagnostico';
 
 export interface EntradaPme {
+  /** O nível apurado, para o motivo saber a que se refere quando não houver resposta. */
+  readonly nivel: Nivel;
   /** Saldo de abertura. `null` quando não houver período anterior (D5). */
   readonly estoqueAbertura: Centavos | null;
   /** Saldo de fechamento. `null` quando a empresa não movimenta o nível (D6). */
@@ -36,10 +39,10 @@ export function calcularPme(entrada: EntradaPme): Pme {
     return { estado: 'ausente' };
   }
   if (custoDirecionador === 0n) {
-    return { estado: 'indefinido', motivo: 'custo direcionador zerado no período' };
+    return { estado: 'indefinido', motivo: motivoDoNivel('custo-direcionador-zerado', entrada.nivel) };
   }
   if (custoDirecionador < 0n) {
-    return { estado: 'indefinido', motivo: 'custo direcionador negativo no período' };
+    return { estado: 'indefinido', motivo: motivoDoNivel('custo-direcionador-negativo', entrada.nivel) };
   }
 
   const dias = entrada.dias ?? DIAS_DO_PERIODO;

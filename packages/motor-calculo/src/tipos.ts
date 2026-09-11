@@ -7,6 +7,8 @@
  * quem chama a tratar esse caso.
  */
 
+import type { Motivo } from './diagnostico';
+
 /** Os três níveis de estoque industrial. */
 export type Nivel = 'MP' | 'PP' | 'PA';
 
@@ -43,7 +45,7 @@ export type BaseEstoque = 'medio' | 'fechamento';
 export type Pme =
   | { readonly estado: 'calculado'; readonly dias: number; readonly base: BaseEstoque }
   | { readonly estado: 'ausente' }
-  | { readonly estado: 'indefinido'; readonly motivo: string };
+  | { readonly estado: 'indefinido'; readonly motivo: Motivo };
 
 /**
  * Taxa de perda do período.
@@ -58,7 +60,7 @@ export type Perda =
 /** Cobertura total em dias, somando apenas os níveis que a empresa movimenta. */
 export type Cobertura =
   | { readonly estado: 'calculado'; readonly dias: number; readonly niveis: readonly Nivel[] }
-  | { readonly estado: 'indefinido'; readonly motivo: string };
+  | { readonly estado: 'indefinido'; readonly motivo: Motivo };
 
 /**
  * O saldo de um nível num período, ou a razão de não haver saldo.
@@ -78,7 +80,7 @@ export type SaldoDeNivel =
       readonly fechamento: Centavos;
     }
   | { readonly estado: 'ausente' }
-  | { readonly estado: 'indefinido'; readonly motivo: string };
+  | { readonly estado: 'indefinido'; readonly motivo: Motivo };
 
 /**
  * O consumo de um nível no período, lido do razão.
@@ -90,7 +92,7 @@ export type SaldoDeNivel =
  */
 export type ConsumoDeNivel =
   | { readonly estado: 'lido'; readonly valor: Centavos }
-  | { readonly estado: 'indefinido'; readonly motivo: string };
+  | { readonly estado: 'indefinido'; readonly motivo: Motivo };
 
 /**
  * O custo de materiais e **de onde ele veio** (RF-29).
@@ -110,7 +112,7 @@ export type CustoDeMateriais =
       readonly informado: Centavos;
       readonly divergencia: number;
     }
-  | { readonly origem: 'indefinido'; readonly motivo: string };
+  | { readonly origem: 'indefinido'; readonly motivo: Motivo };
 
 /**
  * Os números realizados de uma empresa num período.

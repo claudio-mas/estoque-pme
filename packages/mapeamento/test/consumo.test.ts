@@ -231,3 +231,29 @@ describe('custo de materiais (RF-29)', () => {
     expect(custo?.origem).toBe('indefinido');
   });
 });
+
+describe('o motivo é navegável', () => {
+  it('a contrapartida ausente aponta a conta e a linha, não uma frase', () => {
+    const { lancamento: resultado } = aplicar(
+      razaoDeMp([lancamento({ linha: 42, credito: 1_789_136n, contrapartida: null })]),
+    );
+    const consumo = resultado?.consumo.MP;
+    expect(consumo?.estado).toBe('indefinido');
+    if (consumo?.estado !== 'indefinido') throw new Error('esperava indefinido');
+    // É o que o RF-29 pede por "aviso navegável": a conta num campo, não dentro
+    // de uma string que ninguém consegue linkar.
+    expect(consumo.motivo).toEqual({
+      codigo: 'contrapartida-ausente',
+      ancora: { tipo: 'lancamento', conta: '1.1.3.01', linha: 42 },
+    });
+  });
+
+  it('sem razão, o motivo aponta o nível', () => {
+    const consumo = aplicar(undefined).lancamento?.consumo.PP;
+    if (consumo?.estado !== 'indefinido') throw new Error('esperava indefinido');
+    expect(consumo.motivo).toEqual({
+      codigo: 'sem-razao',
+      ancora: { tipo: 'nivel', nivel: 'PP' },
+    });
+  });
+});

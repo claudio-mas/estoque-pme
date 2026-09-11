@@ -17,7 +17,8 @@ export type {
   EntradaDeMapeamento,
   Mapeamento,
   PapelDeConta,
-  SeveridadeDeMapeamento,
+  CodigoDeDiagnostico,
+  CodigoDeValidacao,
   Sugestao,
 } from './tipos';
 

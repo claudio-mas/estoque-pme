@@ -123,7 +123,10 @@ describe('arquivo torto', () => {
 
     expect(resultado.linhas).toHaveLength(2);
     const erro = resultado.diagnosticos.find((d) => d.severidade === 'erro');
-    expect(erro).toMatchObject({ codigo: 'saldo-ilegivel', linha: 4, coluna: 'saldo atual' });
+    expect(erro).toMatchObject({
+      codigo: 'saldo-ilegivel',
+      ancora: { tipo: 'linha', linha: 4, coluna: 'saldo atual' },
+    });
     expect(erro?.mensagem).toContain('#VALOR!');
   });
 
@@ -140,7 +143,10 @@ describe('arquivo torto', () => {
 
     expect(resultado.linhas).toHaveLength(2);
     expect(resultado.diagnosticos).toContainEqual(
-      expect.objectContaining({ codigo: 'colunas-insuficientes', linha: 4 }),
+      expect.objectContaining({
+        codigo: 'colunas-insuficientes',
+        ancora: { tipo: 'linha', linha: 4 },
+      }),
     );
   });
 

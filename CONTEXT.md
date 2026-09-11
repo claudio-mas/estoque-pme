@@ -114,9 +114,14 @@ sem configurar nada.
 _Avoid_: template, mapeamento de arquivo, configuração de importação
 
 **Diagnóstico**:
-Um problema encontrado na leitura de um arquivo, sempre com o número da linha e o motivo. Linha inválida é
-diagnosticada e listada, nunca aborta o lote nem é corrigida em silêncio.
+Um problema encontrado ao ler um arquivo ou ao aplicar o mapeamento, sempre com uma [[âncora]] e um código.
+Linha inválida é diagnosticada e listada, nunca aborta o lote nem é corrigida em silêncio.
 _Avoid_: erro de validação, log, warning
+
+**Âncora**:
+O que um diagnóstico ou um [[motivo]] aponta: o arquivo, uma linha, uma conta, um nível, ou um lançamento do
+razão. É o que torna o aviso navegável — sem ela, o problema é uma frase que ninguém consegue abrir.
+_Avoid_: localização, referência, origem
 
 **Importação**:
 Um arquivo processado para uma empresa, com o sistema de origem, o [[perfil de importação]] usado, quem
@@ -235,7 +240,7 @@ sempre o [[motivo]].
 _Avoid_: nulo, N/A, erro
 
 **Motivo**:
-Por que um cálculo não tem resposta, como código fechado mais a conta, o nível ou a linha a que se refere —
-nunca como frase pronta. É o que torna o aviso navegável: sem a conta num campo próprio, não há para onde
-navegar.
+Por que um cálculo não tem resposta, como código fechado mais a [[âncora]] a que se refere — nunca como frase
+pronta. Todo motivo é um código de diagnóstico válido; o contrário não, porque há diagnóstico que avisa sem
+impedir conta nenhuma.
 _Avoid_: mensagem, erro, descrição do problema

@@ -19,6 +19,10 @@ import {
   giroAnualizado,
   media,
   mediaDosUltimos,
+  mensagemDoMotivo,
+  motivoDaConta,
+  motivoDoNivel,
+  ondeEsta,
   multiplicarPorTaxa,
   ncg,
   paraNumero,
@@ -71,6 +75,7 @@ describe('dinheiro', () => {
 describe('PME', () => {
   it('devolve ausente para nível que a empresa não movimenta', () => {
     const pme = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: null,
       custoDirecionador: reais(1_000),
@@ -81,6 +86,7 @@ describe('PME', () => {
 
   it('devolve indefinido com custo direcionador zerado ou negativo', () => {
     const zerado = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: reais(500),
       custoDirecionador: 0n,
@@ -88,6 +94,7 @@ describe('PME', () => {
     expect(zerado.estado).toBe('indefinido');
 
     const negativo = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: reais(500),
       custoDirecionador: reais(-10),
@@ -98,6 +105,7 @@ describe('PME', () => {
   it('é a inversa exata da projeção — o fator d se cancela', () => {
     const custo = reais(20_288);
     const pme = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: reais(12_047),
       custoDirecionador: custo,
@@ -111,6 +119,7 @@ describe('PME', () => {
     const saldo = reais(12_047);
     const projetarCom = (dias: number): Centavos => {
       const pme = calcularPme({
+        nivel: 'MP',
         estoqueAbertura: null,
         estoqueFechamento: saldo,
         custoDirecionador: custo,
@@ -145,10 +154,14 @@ describe('cobertura', () => {
 
   it('propaga o indefinido em vez de produzir um total parcial', () => {
     const total = cobertura({
-      MP: { estado: 'indefinido', motivo: 'custo direcionador zerado no período' },
+      MP: { estado: 'indefinido', motivo: motivoDoNivel('custo-direcionador-zerado', 'MP') },
       PA: calculado(17.6),
     });
     expect(total.estado).toBe('indefinido');
+    // O motivo aponta para o nível, não repete a frase do PME: quem quiser o
+    // detalhe olha o PME de MP, que continua lá.
+    if (total.estado !== 'indefinido') return;
+    expect(total.motivo).toEqual({ codigo: 'pme-indefinido', ancora: { tipo: 'nivel', nivel: 'MP' } });
   });
 
   it('é indefinida quando nenhum nível foi movimentado', () => {
@@ -286,5 +299,45 @@ describe('indicadores', () => {
   it('recusa taxa de perda fora de [0, 1)', () => {
     expect(() => custoSobPerdaDeCenario(reais(100), 0.03, 1)).toThrow(RangeError);
     expect(() => custoSobPerdaDeCenario(reais(100), -0.01, 0.03)).toThrow(RangeError);
+  });
+});
+
+describe('motivo e âncora', () => {
+  it('diz onde o problema está, em cada forma de âncora', () => {
+    expect(ondeEsta({ tipo: 'arquivo' })).toBe('no arquivo');
+    expect(ondeEsta({ tipo: 'conta', conta: '1.1.3.01' })).toBe('na conta 1.1.3.01');
+    expect(ondeEsta({ tipo: 'conta', conta: '1.1.3.04', nivel: 'MP' })).toBe(
+      'na conta 1.1.3.04, de MP',
+    );
+    expect(ondeEsta({ tipo: 'linha', linha: 42, coluna: 'saldo atual' })).toBe(
+      'na linha 42, coluna saldo atual',
+    );
+    expect(ondeEsta({ tipo: 'lancamento', conta: '1.1.3.01', linha: 7 })).toBe(
+      'no lançamento da linha 7, na conta 1.1.3.01',
+    );
+  });
+
+  it('a frase é montada do código, e o código sobrevive a ela', () => {
+    // É o ponto do ADR-0008: o histórico guarda o código, não a redação de hoje.
+    const motivo = motivoDaConta('nivel-incompleto', '1.1.3.04', 'MP');
+    expect(motivo).toEqual({
+      codigo: 'nivel-incompleto',
+      ancora: { tipo: 'conta', conta: '1.1.3.04', nivel: 'MP' },
+    });
+    expect(mensagemDoMotivo(motivo)).toContain('1.1.3.04');
+  });
+
+  it('o PME indefinido carrega o nível a que se refere', () => {
+    const pme = calcularPme({
+      nivel: 'PP',
+      estoqueAbertura: null,
+      estoqueFechamento: reais(500),
+      custoDirecionador: 0n,
+    });
+    if (pme.estado !== 'indefinido') throw new Error('esperado indefinido');
+    expect(pme.motivo).toEqual({
+      codigo: 'custo-direcionador-zerado',
+      ancora: { tipo: 'nivel', nivel: 'PP' },
+    });
   });
 });

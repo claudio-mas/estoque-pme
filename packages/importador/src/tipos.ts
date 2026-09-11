@@ -6,23 +6,24 @@
  * pacote lança exceção por dado ruim — dado ruim vira `Diagnostico` e a leitura
  * continua. Exceção aqui é defeito de programação, não arquivo torto.
  */
-import type { Centavos, Competencia } from '@estoque-pme/motor-calculo';
+import type { Ancora, Centavos, Competencia, Severidade } from '@estoque-pme/motor-calculo';
 
-export type Severidade = 'erro' | 'aviso' | 'info';
+export type { Severidade };
 
 /**
  * Um problema encontrado na leitura, sempre navegável até a origem.
  *
- * `linha` é 1-based e conta linhas físicas do arquivo, não registros — é o
- * número que o gestor vê ao abrir o arquivo no Excel, e sem ele o aviso não
- * serve para nada. `null` quando o problema é do arquivo inteiro.
+ * A `Ancora` vem do motor e é compartilhada com o mapeamento: aqui ela costuma
+ * ser `linha` — 1-based, linhas físicas do arquivo, o número que o gestor vê ao
+ * abrir no Excel — ou `arquivo`, quando o problema é do arquivo inteiro. O par
+ * `linha`/`coluna` anterior só sabia falar de arquivo, e um problema de
+ * mapeamento não é de uma linha.
  */
 export interface Diagnostico {
   readonly severidade: Severidade;
   readonly codigo: string;
   readonly mensagem: string;
-  readonly linha: number | null;
-  readonly coluna?: string;
+  readonly ancora: Ancora;
 }
 
 /**

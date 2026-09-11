@@ -55,7 +55,7 @@ export function lerBalancete(bytes: Uint8Array, opcoes: OpcoesBalancete = {}): R
       severidade: 'info',
       codigo: 'codificacao-detectada',
       mensagem: `Arquivo lido como ${codificacao}; confira a acentuação na descrição das contas.`,
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
   }
 
@@ -133,7 +133,7 @@ function montarBalancete(
       mensagem:
         'Não foi possível identificar a linha de cabeçalho com as colunas de conta e saldo. ' +
         'Confira se o arquivo é um balancete e não outro relatório.',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
     return { competencia: opcoes.competencia ?? null, linhas: [], diagnosticos, perfil: null };
   }
@@ -148,7 +148,7 @@ function montarBalancete(
       mensagem:
         'A competência não foi encontrada no cabeçalho do arquivo e precisa ser informada — ' +
         'sem ela não há chave de período para importar sem duplicar (RF-05).',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
   }
 
@@ -165,7 +165,7 @@ function montarBalancete(
       severidade: 'erro',
       codigo: 'nenhuma-conta-lida',
       mensagem: 'O cabeçalho foi reconhecido, mas nenhuma linha de conta pôde ser lida.',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
   }
 
@@ -257,7 +257,7 @@ function extrairLinhas(
         mensagem:
           `A linha tem ${registro.campos.length} coluna(s) e o cabeçalho declara ` +
           `${ultimaColuna + 1}. Linha ignorada.`,
-        linha: registro.linha,
+        ancora: { tipo: 'linha', linha: registro.linha },
       });
       continue;
     }
@@ -273,7 +273,7 @@ function extrairLinhas(
         mensagem:
           `Há valores com mais de ${CASAS_DECIMAIS_ESPERADAS} casas decimais, arredondados ao ` +
           'centavo. Confira se o arquivo é um balancete e não um relatório de custo unitário.',
-        linha: registro.linha,
+        ancora: { tipo: 'linha', linha: registro.linha },
       });
     }
 
@@ -282,7 +282,7 @@ function extrairLinhas(
         severidade: 'aviso',
         codigo: 'conta-sem-codigo',
         mensagem: `A conta "${descricao}" não tem código e não poderá ser mapeada por código (RF-28).`,
-        linha: registro.linha,
+        ancora: { tipo: 'linha', linha: registro.linha },
       });
     }
 
@@ -327,8 +327,7 @@ function lerColunasDeValor(
       severidade: 'erro',
       codigo: 'saldo-ilegivel',
       mensagem: `Saldo atual ilegível: ${atual.motivo}. Linha ignorada.`,
-      linha: registro.linha,
-      coluna: 'saldo atual',
+      ancora: { tipo: 'linha', linha: registro.linha, coluna: 'saldo atual' },
     });
     return null;
   }
@@ -342,8 +341,7 @@ function lerColunasDeValor(
       severidade: 'erro',
       codigo: 'saldo-ilegivel',
       mensagem: `Saldo anterior ilegível: ${anterior.motivo}. Linha ignorada.`,
-      linha: registro.linha,
-      coluna: 'saldo anterior',
+      ancora: { tipo: 'linha', linha: registro.linha, coluna: 'saldo anterior' },
     });
     return null;
   }
@@ -377,8 +375,7 @@ function movimento(
       severidade: 'aviso',
       codigo: 'movimento-ilegivel',
       mensagem: `Movimento de ${nome} ilegível: ${lido.motivo}. Considerado zero.`,
-      linha: registro.linha,
-      coluna: nome,
+      ancora: { tipo: 'linha', linha: registro.linha, coluna: nome },
     });
     return 0n;
   }
