@@ -263,6 +263,46 @@ describe('aplicação', () => {
     ];
     const { lancamento } = aplicarMapeamento(BASE, balancete(comPendente));
     expect(lancamento?.estoque.MP.estado).toBe('indefinido');
+    // Este pendente não sugere PP, então a declaração de ausência dele fica de pé.
+    expect(lancamento?.estoque.PP).toEqual({ estado: 'ausente' });
+  });
+
+  it('pendente com a cara do nível vence a declaração de ausência', () => {
+    // O oposto do caso acima, e a decisão que ele esconde: declarar PP ausente
+    // **enquanto** há uma conta que o produto proporia como PP é uma
+    // contradição, não uma ausência. Ganha o pendente, e o nível sai
+    // `indefinido` — ver ADR-0011.
+    const comPp = [
+      ...LINHAS,
+      conta('1.1.3.02', 'PRODUTOS EM PROCESSO', { saldoAtual: 500_000n }),
+    ];
+    const { lancamento } = aplicarMapeamento(BASE, balancete(comPp));
+    expect(lancamento?.estoque.PP.estado).toBe('indefinido');
+
+    const pp = lancamento?.estoque.PP;
+    if (pp?.estado !== 'indefinido') throw new Error('esperava indefinido');
+    expect(pp.motivo).toEqual({
+      codigo: 'nivel-incompleto',
+      ancora: { tipo: 'conta', conta: '1.1.3.02', nivel: 'PP' },
+    });
+  });
+
+  it('ignorar a conta é o que faz a declaração de ausência valer', () => {
+    // A saída do caso acima, e ela não é contorno: ignorar é o gestor dizendo
+    // que olhou a conta e ela não interessa — que é exatamente a informação que
+    // falta para a ausência deixar de ser ambígua.
+    const comPpIgnorada = montar(
+      [
+        ...BASE.entradas,
+        { codigo: '1.1.3.02', descricao: 'PRODUTOS EM PROCESSO', decisao: { estado: 'ignorada' } },
+      ],
+      ['PP'],
+    );
+    const linhas = [
+      ...LINHAS,
+      conta('1.1.3.02', 'PRODUTOS EM PROCESSO', { saldoAtual: 500_000n }),
+    ];
+    const { lancamento } = aplicarMapeamento(comPpIgnorada, balancete(linhas));
     expect(lancamento?.estoque.PP).toEqual({ estado: 'ausente' });
   });
 
