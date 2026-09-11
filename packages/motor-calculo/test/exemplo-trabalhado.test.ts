@@ -42,6 +42,7 @@ const PREVISTO = {
 function pmesPorFechamento(saldos: readonly Centavos[], custos: readonly Centavos[]): number[] {
   return saldos.map((saldo, i) => {
     const pme = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: saldo,
       custoDirecionador: custos[i] as Centavos,
@@ -85,6 +86,7 @@ describe('exemplo trabalhado — apuração histórica', () => {
     // isso que os números acima e os daqui divergem — a divergência é esperada e
     // precisa ser explicada ao cliente na comparação.
     const julho = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: REALIZADO.MP[0] as Centavos,
       estoqueFechamento: REALIZADO.MP[1] as Centavos,
       custoDirecionador: REALIZADO.custoMateriais[1] as Centavos,
@@ -93,6 +95,7 @@ describe('exemplo trabalhado — apuração histórica', () => {
     expect((julho as Extract<Pme, { estado: 'calculado' }>).dias).toBeCloseTo(17.03, 2);
 
     const junho = calcularPme({
+      nivel: 'MP',
       estoqueAbertura: null,
       estoqueFechamento: REALIZADO.MP[0] as Centavos,
       custoDirecionador: REALIZADO.custoMateriais[0] as Centavos,
@@ -103,16 +106,19 @@ describe('exemplo trabalhado — apuração histórica', () => {
   it('soma a cobertura apenas dos níveis movimentados', () => {
     const pmes = {
       MP: calcularPme({
+        nivel: 'MP',
         estoqueAbertura: null,
         estoqueFechamento: REALIZADO.MP[2] as Centavos,
         custoDirecionador: REALIZADO.custoMateriais[2] as Centavos,
       }),
       PP: calcularPme({
+        nivel: 'PP',
         estoqueAbertura: null,
         estoqueFechamento: REALIZADO.PP[2] as Centavos,
         custoDirecionador: REALIZADO.cmv[2] as Centavos,
       }),
       PA: calcularPme({
+        nivel: 'PA',
         estoqueAbertura: null,
         estoqueFechamento: REALIZADO.PA[2] as Centavos,
         custoDirecionador: REALIZADO.cmv[2] as Centavos,

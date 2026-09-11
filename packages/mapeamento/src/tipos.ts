@@ -7,7 +7,7 @@
  * sobre a qual não há entrada, e ela se descobre confrontando o mapeamento com
  * um arquivo, nunca lendo o mapeamento sozinho.
  */
-import type { Nivel } from '@estoque-pme/motor-calculo';
+import type { Ancora, CodigoDeMotivo, Nivel, Severidade } from '@estoque-pme/motor-calculo';
 
 /**
  * O que uma conta significa para o modelo.
@@ -65,22 +65,50 @@ export interface Mapeamento {
   readonly niveisAusentes: readonly Nivel[];
 }
 
-export type SeveridadeDeMapeamento = 'erro' | 'aviso' | 'info';
+/**
+ * Os códigos que só o mapeamento produz: validação e aviso.
+ *
+ * O conjunto completo é este mais os `CodigoDeMotivo` do motor — todo motivo é
+ * um diagnóstico válido, o contrário não. A união é uma só porque vocabulário
+ * duplicado diverge em silêncio: antes desta unificação, `conta-sem-codigo` e
+ * `movimento-ilegivel` existiam aqui **e** no importador, com significados
+ * diferentes em cada lado.
+ */
+export type CodigoDeValidacao =
+  | 'entrada-sem-codigo'
+  | 'conta-pendente'
+  | 'conta-duplicada'
+  | 'sobreposicao-de-subarvore'
+  | 'nivel-ausente-e-mapeado'
+  | 'mp-nao-mapeada'
+  | 'mp-declarada-ausente'
+  | 'cmv-nao-mapeado'
+  | 'receita-nao-mapeada'
+  | 'descricao-divergente'
+  | 'movimento-indisponivel'
+  | 'movimento-divergente'
+  | 'sinal-invertido'
+  | 'sem-competencia'
+  | 'competencia-indeterminada'
+  | 'competencias-diferentes'
+  | 'custo-materiais-digitado'
+  | 'custo-materiais-divergente';
+
+export type CodigoDeDiagnostico = CodigoDeMotivo | CodigoDeValidacao;
 
 /**
- * Um problema do mapeamento, sempre navegável até a conta.
+ * Um problema do mapeamento, sempre navegável até a origem.
  *
- * Tipo próprio, e não o `Diagnostico` do importador: lá a âncora é a linha
- * física do arquivo, aqui o problema é de uma **conta** e vale para todos os
- * arquivos em que ela aparecer. Um campo obrigatório permanentemente nulo seria
- * o tipo dizendo que não é esse tipo.
+ * Usa a mesma `Ancora` do importador e do motor: um problema de mapeamento não
+ * é de uma linha física — costuma ser de uma **conta**, e vale para todos os
+ * arquivos em que ela aparecer —, mas o razão traz casos que apontam para um
+ * lançamento, e o par `conta`/`linha` separado não sabia dizer isso.
  */
 export interface DiagnosticoDeMapeamento {
-  readonly severidade: SeveridadeDeMapeamento;
-  readonly codigo: string;
+  readonly severidade: Severidade;
+  readonly codigo: CodigoDeDiagnostico;
   readonly mensagem: string;
-  /** Código da conta; `null` quando o problema é do mapeamento inteiro. */
-  readonly conta: string | null;
+  readonly ancora: Ancora;
 }
 
 /**

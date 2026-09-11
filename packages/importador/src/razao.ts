@@ -118,7 +118,7 @@ function montarRazao(
       mensagem:
         'Não foi possível identificar as colunas de valor do razão. Confira se o arquivo é o ' +
         'razão das contas de estoque e não outro relatório.',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
     return { competencia: opcoes.competencia ?? null, contas: [], diagnosticos, perfil: null };
   }
@@ -138,7 +138,7 @@ function montarRazao(
       mensagem:
         'A competência não foi encontrada no cabeçalho do arquivo e precisa ser informada — ' +
         'sem ela não há chave de período para importar sem duplicar (RF-05).',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
   }
 
@@ -154,7 +154,7 @@ function montarRazao(
       severidade: 'erro',
       codigo: 'nenhuma-conta-lida',
       mensagem: 'O cabeçalho foi reconhecido, mas nenhuma conta pôde ser lida.',
-      linha: null,
+      ancora: { tipo: 'arquivo' },
     });
   }
 
@@ -319,7 +319,7 @@ function extrairPlano(
         severidade: 'aviso',
         codigo: 'lancamento-sem-valor',
         mensagem: `Linha da conta ${codigo} sem valor legível; não entrou no movimento.`,
-        linha: registro.linha,
+        ancora: { tipo: 'lancamento', conta: codigo, linha: registro.linha },
       });
       continue;
     }
@@ -389,7 +389,7 @@ function extrairBlocos(
           severidade: 'aviso',
           codigo: 'lancamento-sem-conta',
           mensagem: 'Lançamento antes de qualquer cabeçalho de conta; ignorado.',
-          linha: registro.linha,
+          ancora: { tipo: 'linha', linha: registro.linha },
         });
         continue;
       }
@@ -454,7 +454,7 @@ function conferirIdentidade(contas: readonly ContaRazao[], diagnosticos: Diagnos
       mensagem:
         `Na conta ${conta.codigo}, saldo anterior mais débitos menos créditos não dá o saldo ` +
         'atual. Faltam lançamentos no arquivo ou algum valor foi lido errado.',
-      linha: null,
+      ancora: { tipo: 'conta', conta: conta.codigo },
     });
   }
 }

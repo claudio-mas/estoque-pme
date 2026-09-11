@@ -40,9 +40,9 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
     if (entrada.codigo.trim() === '') {
       diagnosticos.push({
         severidade: 'erro',
-        codigo: 'conta-sem-codigo',
+        codigo: 'entrada-sem-codigo',
         mensagem: 'Entrada de mapeamento sem código de conta.',
-        conta: null,
+        ancora: { tipo: 'mapeamento' },
       });
       continue;
     }
@@ -52,7 +52,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
         severidade: 'erro',
         codigo: 'conta-duplicada',
         mensagem: `A conta ${entrada.codigo} aparece mais de uma vez no mapeamento.`,
-        conta: entrada.codigo,
+        ancora: { tipo: 'conta', conta: entrada.codigo },
       });
     }
     vistos.add(entrada.codigo);
@@ -65,7 +65,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
           severidade: 'erro',
           codigo: 'sobreposicao-de-subarvore',
           mensagem: `A conta ${entrada.codigo} está mapeada e a conta ${outra.codigo}, acima dela, também. Cada real do balancete tem de ser contado por exatamente um mapeamento.`,
-          conta: entrada.codigo,
+          ancora: { tipo: 'conta', conta: entrada.codigo },
         });
       }
     }
@@ -80,7 +80,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
         severidade: 'erro',
         codigo: 'nivel-ausente-e-mapeado',
         mensagem: `O nível ${nivel} está declarado ausente e ao mesmo tempo tem conta classificada.`,
-        conta: null,
+        ancora: { tipo: 'mapeamento' },
       });
     }
   }
@@ -91,7 +91,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
       codigo: 'mp-nao-mapeada',
       mensagem:
         'Nenhuma conta classificada como estoque de MP. Sem MP não há PME de matéria-prima, custo de materiais nem teto de compras — classifique a conta ou declare o nível ausente.',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 
@@ -105,7 +105,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
       codigo: 'mp-declarada-ausente',
       mensagem:
         'MP declarada ausente. A matéria-prima provavelmente está dentro de outro nível, inflando o PME dele.',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 
@@ -115,7 +115,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
       codigo: 'cmv-nao-mapeado',
       mensagem:
         'Nenhuma conta classificada como CMV. O CMV é o direcionador de custo de PP e de PA — sem ele nenhum dos dois tem PME.',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 
@@ -125,7 +125,7 @@ export function validarMapeamento(mapeamento: Mapeamento): readonly DiagnosticoD
       codigo: 'receita-nao-mapeada',
       mensagem:
         'Nenhuma conta classificada como receita. NCG e ciclo financeiro sairão indefinidos (D2).',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 

@@ -11,7 +11,8 @@
  * decidir quais créditos contam.
  */
 import type { ContaRazao, LancamentoRazao, ResultadoRazao } from '@estoque-pme/importador';
-import type { Centavos, ConsumoDeNivel, Nivel } from '@estoque-pme/motor-calculo';
+import { mensagemDoMotivo, motivoDoNivel } from '@estoque-pme/motor-calculo';
+import type { Centavos, ConsumoDeNivel, Motivo, Nivel } from '@estoque-pme/motor-calculo';
 import { pertenceA } from './subarvore';
 import type { DiagnosticoDeMapeamento, Mapeamento, PapelDeConta } from './tipos';
 
@@ -94,18 +95,22 @@ function contasDoNivel(
   );
 }
 
+/**
+ * O motivo de não derivar, ancorado no lançamento que impediu.
+ *
+ * A âncora é `lancamento` e não `conta` porque é esse o par que o gestor
+ * precisa abrir: a conta diz onde procurar, a linha diz o que corrigir.
+ */
 function motivoDaContrapartida(
   contrapartida: Contrapartida,
   lancamento: LancamentoRazao,
   conta: ContaRazao,
-): string | null {
-  if (contrapartida.tipo === 'ausente') {
-    return `o lançamento da linha ${lancamento.linha}, na conta ${conta.codigo}, não traz contrapartida`;
-  }
-  if (contrapartida.tipo === 'pendente') {
-    return `a contrapartida ${lancamento.contrapartida ?? ''} do lançamento da linha ${lancamento.linha} não está classificada nem ignorada`;
-  }
-  return null;
+): Motivo | null {
+  if (contrapartida.tipo !== 'ausente' && contrapartida.tipo !== 'pendente') return null;
+  return {
+    codigo: contrapartida.tipo === 'ausente' ? 'contrapartida-ausente' : 'contrapartida-pendente',
+    ancora: { tipo: 'lancamento', conta: conta.codigo, linha: lancamento.linha },
+  };
 }
 
 /**
@@ -126,10 +131,7 @@ export function consumoDoNivel(
 ): ConsumoDeNivel {
   const contas = contasDoNivel(razao, mapeamento, nivel);
   if (contas.length === 0) {
-    return {
-      estado: 'indefinido',
-      motivo: `O razão não traz nenhuma das contas classificadas como estoque de ${nivel}.`,
-    };
+    return { estado: 'indefinido', motivo: motivoDoNivel('razao-sem-conta-do-nivel', nivel) };
   }
 
   let total: Centavos = 0n;
@@ -143,12 +145,11 @@ export function consumoDoNivel(
       if (motivo !== null) {
         diagnosticos.push({
           severidade: 'aviso',
-          codigo:
-            contrapartida.tipo === 'ausente' ? 'contrapartida-ausente' : 'contrapartida-pendente',
-          mensagem: `Consumo de ${nivel} não pôde ser derivado: ${motivo}.`,
-          conta: conta.codigo,
+          codigo: motivo.codigo,
+          mensagem: `Consumo de ${nivel} não foi derivado. ${mensagemDoMotivo(motivo)}`,
+          ancora: motivo.ancora,
         });
-        return { estado: 'indefinido', motivo: `Em ${nivel}, ${motivo}.` };
+        return { estado: 'indefinido', motivo };
       }
 
       if (creditoEhConsumo(contrapartida, nivel)) total += lancamento.credito;

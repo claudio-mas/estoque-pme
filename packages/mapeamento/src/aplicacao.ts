@@ -21,12 +21,16 @@ import { normalizar } from '@estoque-pme/importador';
 import {
   LIMITE_DIVERGENCIA_CUSTO_MATERIAIS,
   confrontarCustoMateriais,
+  mensagemDoMotivo,
+  motivoDaConta,
+  motivoDoNivel,
 } from '@estoque-pme/motor-calculo';
 import type {
   Centavos,
   ConsumoDeNivel,
   CustoDeMateriais,
   Lancamento,
+  Motivo,
   Nivel,
   SaldoDeNivel,
 } from '@estoque-pme/motor-calculo';
@@ -67,8 +71,7 @@ export interface OpcoesAplicacao {
   readonly limiteDivergencia?: number;
 }
 
-const SEM_RAZAO =
-  'Sem razão da conta de MP e sem valor informado: o custo de materiais não é linha de balancete nem de DRE.';
+const SEM_RAZAO: Motivo = motivoDoNivel('sem-razao-nem-informado', 'MP');
 
 /** O sentido em que o movimento de cada papel é positivo. */
 function sentidoDe(papel: PapelDeConta['papel']): bigint {
@@ -127,9 +130,9 @@ function somarMovimento(
       if (valor === null) {
         diagnosticos.push({
           severidade: 'aviso',
-          codigo: 'movimento-ilegivel',
+          codigo: 'movimento-indisponivel',
           mensagem: `A conta ${linha.codigo} está mapeada mas o arquivo não traz movimento nem os dois saldos; ela não entrou na soma.`,
-          conta: linha.codigo,
+          ancora: { tipo: 'conta', conta: linha.codigo },
         });
         continue;
       }
@@ -138,7 +141,7 @@ function somarMovimento(
           severidade: 'aviso',
           codigo: 'movimento-divergente',
           mensagem: `Na conta ${linha.codigo}, débito menos crédito não bate com a diferença dos saldos. Prevaleceu débito menos crédito.`,
-          conta: linha.codigo,
+          ancora: { tipo: 'conta', conta: linha.codigo },
         });
       }
       total = (total ?? 0n) + valor;
@@ -153,7 +156,7 @@ function somarMovimento(
       severidade: 'aviso',
       codigo: 'sinal-invertido',
       mensagem: `O movimento de ${papel} veio no sentido contrário ao esperado no período; o valor foi normalizado.`,
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
     return -normalizado;
   }
@@ -172,8 +175,8 @@ function somarMovimento(
 function niveisEmDuvida(
   pendentes: readonly ContaPendente[],
   entradas: readonly EntradaDeMapeamento[],
-): ReadonlyMap<Nivel, string> {
-  const duvidas = new Map<Nivel, string>();
+): ReadonlyMap<Nivel, Motivo> {
+  const duvidas = new Map<Nivel, Motivo>();
 
   const paisPorNivel = new Map<Nivel, Set<string>>();
   for (const entrada of entradas) {
@@ -195,7 +198,7 @@ function niveisEmDuvida(
     ) {
       duvidas.set(
         pendente.sugestao.papel.nivel,
-        `a conta ${pendente.codigo} está pendente e o produto a propõe como estoque desse nível`,
+        motivoDaConta('nivel-incompleto', pendente.codigo, pendente.sugestao.papel.nivel),
       );
     }
 
@@ -204,10 +207,7 @@ function niveisEmDuvida(
     for (const nivel of NIVEIS) {
       if (duvidas.has(nivel)) continue;
       if (paisPorNivel.get(nivel)?.has(pai) === true) {
-        duvidas.set(
-          nivel,
-          `a conta ${pendente.codigo} está pendente no mesmo grupo das contas classificadas desse nível`,
-        );
+        duvidas.set(nivel, motivoDaConta('nivel-incompleto', pendente.codigo, nivel));
       }
     }
   }
@@ -219,7 +219,7 @@ function saldoDoNivel(
   nivel: Nivel,
   mapeamento: Mapeamento,
   linhas: readonly LinhaBalancete[],
-  duvidas: ReadonlyMap<Nivel, string>,
+  duvidas: ReadonlyMap<Nivel, Motivo>,
   diagnosticos: DiagnosticoDeMapeamento[],
 ): SaldoDeNivel {
   const entradas = mapeamento.entradas.filter(
@@ -230,16 +230,11 @@ function saldoDoNivel(
   );
 
   const duvida = duvidas.get(nivel);
-  if (duvida !== undefined) {
-    return { estado: 'indefinido', motivo: `${nivel} não é conhecido por inteiro: ${duvida}.` };
-  }
+  if (duvida !== undefined) return { estado: 'indefinido', motivo: duvida };
 
   if (entradas.length === 0) {
     if (mapeamento.niveisAusentes.includes(nivel)) return { estado: 'ausente' };
-    return {
-      estado: 'indefinido',
-      motivo: `Nenhuma conta classificada como estoque de ${nivel}, e o nível não foi declarado ausente.`,
-    };
+    return { estado: 'indefinido', motivo: motivoDoNivel('nivel-nao-mapeado', nivel) };
   }
 
   let fechamento: Centavos = 0n;
@@ -252,11 +247,11 @@ function saldoDoNivel(
           severidade: 'erro',
           codigo: 'saldo-de-fechamento-ausente',
           mensagem: `A conta ${linha.codigo} está classificada como estoque de ${nivel} mas o arquivo não traz saldo de fechamento.`,
-          conta: linha.codigo,
+          ancora: { tipo: 'conta', conta: linha.codigo },
         });
         return {
           estado: 'indefinido',
-          motivo: `A conta ${linha.codigo} não trouxe saldo de fechamento.`,
+          motivo: motivoDaConta('saldo-de-fechamento-ausente', linha.codigo, nivel),
         };
       }
       fechamento += linha.saldoAtual;
@@ -316,7 +311,7 @@ function conferirDescricoes(
       severidade: 'aviso',
       codigo: 'descricao-divergente',
       mensagem: `A conta ${entrada.codigo} foi mapeada como "${entrada.descricao}" e no arquivo veio como "${linha.descricao}". Conta renomeada ou código reaproveitado — confira antes de usar o histórico.`,
-      conta: entrada.codigo,
+      ancora: { tipo: 'conta', conta: entrada.codigo },
     });
   }
 }
@@ -346,7 +341,7 @@ export function aplicarMapeamento(
       severidade: 'aviso',
       codigo: 'conta-pendente',
       mensagem: `A conta ${pendente.codigo} — "${pendente.descricao}" — não foi classificada nem ignorada.`,
-      conta: pendente.codigo,
+      ancora: { tipo: 'conta', conta: pendente.codigo },
     });
   }
 
@@ -356,7 +351,7 @@ export function aplicarMapeamento(
       codigo: 'sem-competencia',
       mensagem:
         'O arquivo não diz a que competência se refere, e sem ela o lançamento não tem chave (RF-05).',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 
@@ -447,7 +442,7 @@ function conferirRazao(
       severidade: 'erro',
       codigo: 'competencia-indeterminada',
       mensagem: 'Balancete e razão precisam dizer a que competência pertencem para serem cruzados.',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
     return null;
   }
@@ -456,7 +451,7 @@ function conferirRazao(
       severidade: 'erro',
       codigo: 'competencias-diferentes',
       mensagem: `O balancete é de ${doBalancete.mes}/${doBalancete.ano} e o razão de ${doRazao.mes}/${doRazao.ano}.`,
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
     return null;
   }
@@ -470,7 +465,7 @@ function consumoDe(
   diagnosticos: DiagnosticoDeMapeamento[],
 ): ConsumoDeNivel {
   if (razao === null) {
-    return { estado: 'indefinido', motivo: `Sem razão, o consumo de ${nivel} não é medido.` };
+    return { estado: 'indefinido', motivo: motivoDoNivel('sem-razao', nivel) };
   }
   return consumoDoNivel(nivel, mapeamento, razao, diagnosticos);
 }
@@ -499,7 +494,7 @@ function decidirCustoMateriais(
       mensagem:
         'O custo de materiais foi digitado, não derivado do razão. Ele alimenta o PME de MP e o ' +
         'teto de compras, e nada no balancete confirma esse número.',
-      conta: null,
+      ancora: { tipo: 'mapeamento' },
     });
   }
 
@@ -510,7 +505,7 @@ function decidirCustoMateriais(
         severidade: 'aviso',
         codigo: 'custo-materiais-divergente',
         mensagem: `O custo de materiais digitado diverge ${(custo.divergencia * 100).toFixed(1)}% do derivado do razão; prevaleceu o derivado.`,
-        conta: null,
+        ancora: { tipo: 'mapeamento' },
       });
     }
   }

@@ -19,6 +19,9 @@ export type {
   SaldoDeNivel,
 } from './tipos';
 
+export type { Ancora, CodigoDeMotivo, Motivo, Severidade } from './diagnostico';
+export { mensagemDoMotivo, motivoDaConta, motivoDoNivel, ondeEsta } from './diagnostico';
+
 export { DIAS_DO_PERIODO } from './periodo';
 
 export {

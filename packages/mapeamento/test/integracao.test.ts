@@ -139,6 +139,7 @@ describe('do arquivo ao PME', () => {
     if (pa.estado !== 'lido') throw new Error('esperava PA lido');
 
     const pme = calcularPme({
+      nivel: 'PA',
       estoqueAbertura: pa.abertura,
       estoqueFechamento: pa.fechamento,
       custoDirecionador: lancamento.cmv ?? 0n,
@@ -191,6 +192,7 @@ describe('do arquivo ao PME', () => {
       if (saldo.estado === 'ausente') return { estado: 'ausente' };
       if (saldo.estado === 'indefinido') return { estado: 'indefinido', motivo: saldo.motivo };
       return calcularPme({
+        nivel,
         estoqueAbertura: saldo.abertura,
         estoqueFechamento: saldo.fechamento,
         custoDirecionador: custo,
