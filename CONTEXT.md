@@ -49,8 +49,14 @@ _Avoid_: simulação, versão, hipótese
 
 **Premissa**:
 Um valor projetado que alimenta o cenário — PME estimado, método de projeção de custo, PMR, PMP, taxa de
-perda. É a entrada do gestor sobre o futuro, distinta do lançamento, que é passado realizado.
+perda. É a entrada do gestor sobre o futuro, distinta do lançamento, que é passado realizado, e do
+[[valor informado]], que é sobre o passado.
 _Avoid_: parâmetro, configuração, assumption
+
+**Valor informado**:
+Um número que o gestor digita sobre um período já realizado, quando o arquivo não o traz — hoje só o custo
+de materiais. Não é premissa: não se compara entre cenários, é um só, e ou está certo ou está errado.
+_Avoid_: premissa, ajuste, override, valor manual
 
 **Mapeamento de contas**:
 A correspondência entre o plano de contas da empresa e os papéis do modelo — MP, PP, PA, CMV, receita,
@@ -111,6 +117,12 @@ _Avoid_: template, mapeamento de arquivo, configuração de importação
 Um problema encontrado na leitura de um arquivo, sempre com o número da linha e o motivo. Linha inválida é
 diagnosticada e listada, nunca aborta o lote nem é corrigida em silêncio.
 _Avoid_: erro de validação, log, warning
+
+**Importação**:
+Um arquivo processado para uma empresa, com o sistema de origem, o [[perfil de importação]] usado, quem
+importou e quando. É por arquivo, não por empresa: a empresa troca de ERP, e é a distribuição das
+importações que decide a fila de integrações da v2.
+_Avoid_: upload, carga, processamento
 
 ### Medidas
 
@@ -219,5 +231,11 @@ _Avoid_: 0%, sem perdas, não informado
 
 **Indefinido**:
 O cálculo que não tem resposta neste período — PME com direcionador de custo zerado, por exemplo. Carrega
-sempre o motivo.
+sempre o [[motivo]].
 _Avoid_: nulo, N/A, erro
+
+**Motivo**:
+Por que um cálculo não tem resposta, como código fechado mais a conta, o nível ou a linha a que se refere —
+nunca como frase pronta. É o que torna o aviso navegável: sem a conta num campo próprio, não há para onde
+navegar.
+_Avoid_: mensagem, erro, descrição do problema
