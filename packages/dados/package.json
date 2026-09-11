@@ -16,6 +16,8 @@
     "migracoes": "drizzle-kit generate && node --experimental-strip-types gerar-rls.mjs"
   },
   "dependencies": {
+    "@estoque-pme/importador": "0.1.0",
+    "@estoque-pme/mapeamento": "0.1.0",
     "@estoque-pme/motor-calculo": "0.1.0",
     "drizzle-orm": "^0.45.2"
   },
