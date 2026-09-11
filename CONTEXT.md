@@ -220,7 +220,9 @@ Quatro ausências diferentes, que o modelo distingue de propósito porque inform
 que não informar nada.
 
 **Ausente**:
-O nível que a empresa não movimenta — tipicamente PP. É decisão da empresa, não lacuna de dado.
+O nível que a empresa não movimenta — tipicamente PP. É decisão da empresa, não lacuna de dado, e por isso
+é **declarada**. Declaração com conta pendente da cara do nível não é ausência, é contradição: ali o nível
+sai [[indefinido]].
 _Avoid_: vazio, zerado, sem estoque
 
 **Pendente**:
