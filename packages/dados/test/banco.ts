@@ -19,6 +19,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
+import { drizzle } from 'drizzle-orm/pglite';
+import * as schema from '../src/schema';
+import type { Banco as BancoDrizzle } from '../src/banco';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
@@ -39,6 +42,8 @@ function migracoes(): string {
 
 export interface Banco {
   readonly pg: PGlite;
+  /** O mesmo banco pela API do Drizzle, que é como a escrita o consome. */
+  readonly db: BancoDrizzle;
   /** Executa dentro de uma transação com a empresa declarada, como a aplicação faz. */
   comoEmpresa<T>(empresaId: string | null, corpo: (pg: PGlite) => Promise<T>): Promise<T>;
   fechar(): Promise<void>;
@@ -53,13 +58,16 @@ export async function bancoDeTeste(): Promise<Banco> {
     grant select, insert, update, delete on all tables in schema public to aplicacao;
   `);
 
+  // Uma vez por sessão: daqui para a frente tudo roda como papel comum, que é
+  // o que faz a RLS valer. PGlite tem uma conexão só, então `set role` basta.
+  await pg.exec('set role aplicacao');
+
   return {
     pg,
+    db: drizzle(pg, { schema }) as unknown as BancoDrizzle,
     async comoEmpresa(empresaId, corpo) {
       await pg.exec('begin');
       try {
-        // Papel comum: superusuário ignoraria toda policy, e o teste não mediria nada.
-        await pg.exec('set local role aplicacao');
         // `SET LOCAL` é por transação: não vaza entre requisições num pool.
         await pg.query('select set_config($1, $2, true)', ['app.empresa_id', empresaId ?? '']);
         const resultado = await corpo(pg);

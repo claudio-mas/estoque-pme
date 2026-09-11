@@ -11,7 +11,7 @@
  * e regra repetida diverge na primeira correção. Aqui ela é uma função.
  */
 import { sql } from 'drizzle-orm';
-import { bigint, integer, text } from 'drizzle-orm/pg-core';
+import { bigint, integer } from 'drizzle-orm/pg-core';
 
 /**
  * Dinheiro: `bigint` (int8) em centavos, nunca `numeric` nem float.
@@ -21,16 +21,20 @@ import { bigint, integer, text } from 'drizzle-orm/pg-core';
  */
 export const centavos = (nome: string) => bigint(nome, { mode: 'bigint' });
 
-/** As colunas de uma `Ancora`, prefixadas. */
-export function colunasDeAncora<P extends string>(p: P) {
-  return {
-    [`${p}_tipo`]: text(`${p}_tipo`),
-    [`${p}_linha`]: integer(`${p}_linha`),
-    [`${p}_coluna`]: text(`${p}_coluna`),
-    [`${p}_conta`]: text(`${p}_conta`),
-    [`${p}_nivel`]: text(`${p}_nivel`),
-  } as const;
-}
+/**
+ * As colunas de âncora e de motivo são escritas **explicitamente** em cada
+ * tabela, e não geradas por helper.
+ *
+ * A tentação era óbvia — cinco colunas repetidas em cinco lugares —, mas um
+ * helper com chave computada devolve `{ [x: string]: ... }`, e isso apaga o
+ * tipo de inserção da tabela inteira: `.values()` passa a aceitar qualquer
+ * coisa, e um nome de coluna errado compila. Trocar checagem de tipo por trinta
+ * linhas a menos é mau negócio num pacote cuja razão de existir é o banco
+ * registrar invariantes.
+ *
+ * O que **fica** em função é o `CHECK` — a regra que precisa ser a mesma em
+ * todo lugar. As colunas são declaração; a regra é lógica.
+ */
 
 /**
  * O `CHECK` da âncora, bicondicional em todas as variantes.
@@ -57,14 +61,6 @@ export function checkDeAncora(p: string, opcional = false) {
     or (${tipo} = 'conta' and ${naoNulo('conta')} and ${nulo('linha')} and ${nulo('coluna')})
     or (${tipo} = 'nivel' and ${naoNulo('nivel')} and ${nulo('linha')} and ${nulo('coluna')} and ${nulo('conta')})
     or (${tipo} = 'lancamento' and ${naoNulo('conta')} and ${naoNulo('linha')} and ${nulo('coluna')} and ${nulo('nivel')})`;
-}
-
-/** As colunas de um `Motivo`: o código mais a âncora dele. */
-export function colunasDeMotivo<P extends string>(p: P) {
-  return {
-    [`${p}_codigo`]: text(`${p}_codigo`),
-    ...colunasDeAncora(`${p}_ancora`),
-  } as const;
 }
 
 /**

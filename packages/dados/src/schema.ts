@@ -32,9 +32,7 @@ import {
   checkDeAncora,
   checkDeCompetencia,
   checkDeMotivo,
-  colunasDeAncora,
   colunasDeCompetencia,
-  colunasDeMotivo,
 } from './colunas';
 
 const criadoEm = () => timestamp('criado_em', { withTimezone: true }).notNull().defaultNow();
@@ -309,7 +307,12 @@ export const periodo = pgTable(
         else abs(custo_materiais_valor - custo_materiais_informado)::double precision / abs(custo_materiais_valor)
       end`,
     ),
-    ...colunasDeMotivo('custo_materiais_motivo'),
+    custoMateriaisMotivoCodigo: text('custo_materiais_motivo_codigo'),
+    custoMateriaisMotivoAncoraTipo: text('custo_materiais_motivo_ancora_tipo'),
+    custoMateriaisMotivoAncoraLinha: integer('custo_materiais_motivo_ancora_linha'),
+    custoMateriaisMotivoAncoraColuna: text('custo_materiais_motivo_ancora_coluna'),
+    custoMateriaisMotivoAncoraConta: text('custo_materiais_motivo_ancora_conta'),
+    custoMateriaisMotivoAncoraNivel: text('custo_materiais_motivo_ancora_nivel'),
     versaoMapeamento: integer('versao_mapeamento'),
     versaoValorInformado: integer('versao_valor_informado'),
     atualizadoEm: timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
@@ -352,11 +355,21 @@ export const lancamentoNivel = pgTable(
     estoqueEstado: text('estoque_estado').notNull(),
     estoqueAbertura: centavos('estoque_abertura'),
     estoqueFechamento: centavos('estoque_fechamento'),
-    ...colunasDeMotivo('estoque_motivo'),
+    estoqueMotivoCodigo: text('estoque_motivo_codigo'),
+    estoqueMotivoAncoraTipo: text('estoque_motivo_ancora_tipo'),
+    estoqueMotivoAncoraLinha: integer('estoque_motivo_ancora_linha'),
+    estoqueMotivoAncoraColuna: text('estoque_motivo_ancora_coluna'),
+    estoqueMotivoAncoraConta: text('estoque_motivo_ancora_conta'),
+    estoqueMotivoAncoraNivel: text('estoque_motivo_ancora_nivel'),
 
     consumoEstado: text('consumo_estado').notNull(),
     consumoValor: centavos('consumo_valor'),
-    ...colunasDeMotivo('consumo_motivo'),
+    consumoMotivoCodigo: text('consumo_motivo_codigo'),
+    consumoMotivoAncoraTipo: text('consumo_motivo_ancora_tipo'),
+    consumoMotivoAncoraLinha: integer('consumo_motivo_ancora_linha'),
+    consumoMotivoAncoraColuna: text('consumo_motivo_ancora_coluna'),
+    consumoMotivoAncoraConta: text('consumo_motivo_ancora_conta'),
+    consumoMotivoAncoraNivel: text('consumo_motivo_ancora_nivel'),
 
     /** `naoMedido` é o D7: empresa sem conta de baixa mapeada, nunca 0%. */
     perdasEstado: text('perdas_estado').notNull(),
@@ -402,7 +415,11 @@ export const diagnosticoImportacao = pgTable(
     severidade: text('severidade').notNull(),
     codigo: text('codigo').notNull(),
     mensagem: text('mensagem').notNull(),
-    ...colunasDeAncora('ancora'),
+    ancoraTipo: text('ancora_tipo'),
+    ancoraLinha: integer('ancora_linha'),
+    ancoraColuna: text('ancora_coluna'),
+    ancoraConta: text('ancora_conta'),
+    ancoraNivel: text('ancora_nivel'),
   },
   (t) => [
     check('diagnostico_importacao_severidade', sql`${t.severidade} in ('erro', 'aviso', 'info')`),
@@ -425,7 +442,11 @@ export const diagnosticoPeriodo = pgTable(
     severidade: text('severidade').notNull(),
     codigo: text('codigo').notNull(),
     mensagem: text('mensagem').notNull(),
-    ...colunasDeAncora('ancora'),
+    ancoraTipo: text('ancora_tipo'),
+    ancoraLinha: integer('ancora_linha'),
+    ancoraColuna: text('ancora_coluna'),
+    ancoraConta: text('ancora_conta'),
+    ancoraNivel: text('ancora_nivel'),
   },
   (t) => [
     check('diagnostico_periodo_competencia', checkDeCompetencia),
