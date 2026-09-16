@@ -8,7 +8,7 @@
  */
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import { SQL_DO_PAPEL_DA_APLICACAO, schema, semear, sqlDasMigracoes } from '@estoque-pme/dados';
+import { SQL_DO_PAPEL_DA_APLICACAO, schema, semear, sqlDaRls, sqlDoSchema } from '@estoque-pme/dados';
 
 const [email, nome] = process.argv.slice(2);
 if (!email || !nome) {
@@ -20,7 +20,8 @@ const pg = new PGlite(process.env['DADOS_PGLITE'] ?? '.dados');
 const { rows } = await pg.query<{ existe: boolean }>(
   `select exists (select 1 from information_schema.tables where table_name = 'empresa') as existe`,
 );
-if (!rows[0]?.existe) await pg.exec(sqlDasMigracoes());
+if (!rows[0]?.existe) await pg.exec(sqlDoSchema());
+await pg.exec(sqlDaRls());
 await pg.exec(SQL_DO_PAPEL_DA_APLICACAO);
 
 const banco = drizzle(pg, { schema });

@@ -11,11 +11,12 @@
  * derivado daqui faria este pacote dono de resultado, que o ADR-0009 disse que
  * não se persiste e, por extensão, não se serve de cá.
  */
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import type { LinhaBalancete } from '@estoque-pme/importador';
 import type { Lancamento, Nivel } from '@estoque-pme/motor-calculo';
 import type { Transacao } from './banco';
 import { consumoDeLinha, custoMateriaisDeLinha, perdaDeLinha, saldoDeLinha } from './codec';
-import { lancamentoNivel, periodo } from './schema';
+import { balanceteLinha, importacao, lancamentoNivel, periodo } from './schema';
 
 const NIVEIS: readonly Nivel[] = ['MP', 'PP', 'PA'];
 
@@ -129,4 +130,71 @@ export async function lancamentosDaEmpresa(
   }
 
   return resultado;
+}
+
+/**
+ * As contas que a empresa já mostrou em algum balancete, uma vez cada.
+ *
+ * É a base sobre a qual as pendências se calculam: `proporMapeamento` recebe
+ * estas linhas e o mapeamento corrente, e devolve o que ainda não foi decidido.
+ * Vem na forma de `LinhaBalancete` porque é o que o mapeamento consome — a
+ * descrição e o `sintetica` são os da última competência em que a conta
+ * apareceu, que é o que o gestor reconhece.
+ */
+export async function contasDaEmpresa(
+  tx: Transacao,
+  empresaId: string,
+): Promise<readonly LinhaBalancete[]> {
+  const linhas = await tx
+    .select()
+    .from(balanceteLinha)
+    .where(eq(balanceteLinha.empresaId, empresaId))
+    .orderBy(asc(balanceteLinha.ano), asc(balanceteLinha.mes), asc(balanceteLinha.conta));
+
+  const porConta = new Map<string, LinhaBalancete>();
+  for (const l of linhas) {
+    porConta.set(l.conta, {
+      linha: l.linha,
+      codigo: l.conta,
+      descricao: l.descricao,
+      saldoAnterior: l.saldoAnterior,
+      debito: l.debito,
+      credito: l.credito,
+      saldoAtual: l.saldoAtual,
+      grau: l.grau,
+      sintetica: l.sintetica,
+    });
+  }
+  return [...porConta.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
+}
+
+/** As importações da empresa, da mais recente à mais antiga. */
+export async function importacoesDaEmpresa(
+  tx: Transacao,
+  empresaId: string,
+): Promise<readonly ImportacaoLida[]> {
+  const linhas = await tx
+    .select()
+    .from(importacao)
+    .where(eq(importacao.empresaId, empresaId))
+    .orderBy(desc(importacao.criadoEm));
+  return linhas.map((i) => ({
+    id: i.id,
+    origem: i.origem,
+    artefato: i.artefato as 'balancete' | 'razao',
+    competencia: { ano: i.ano, mes: i.mes },
+    criadas: i.linhasCriadas,
+    atualizadas: i.linhasAtualizadas,
+    em: i.criadoEm,
+  }));
+}
+
+export interface ImportacaoLida {
+  readonly id: string;
+  readonly origem: string;
+  readonly artefato: 'balancete' | 'razao';
+  readonly competencia: { readonly ano: number; readonly mes: number };
+  readonly criadas: number;
+  readonly atualizadas: number;
+  readonly em: Date;
 }
