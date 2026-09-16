@@ -6,6 +6,7 @@ import type { Nivel } from '@estoque-pme/motor-calculo';
 import { salvar } from './acoes';
 import type { EstadoDoMapeamento } from './acoes';
 import type { ContaNaTela, DecisaoDoFormulario } from './decisoes';
+import { ID_DA_CONTA } from '@/servidor/navegacao';
 
 const NIVEIS: readonly Nivel[] = ['MP', 'PP', 'PA'];
 
@@ -94,7 +95,11 @@ export function Formulario({
           </thead>
           <tbody>
             {contas.map((c) => (
-              <tr key={c.codigo} className={`border-t border-stone-200 ${c.sintetica ? 'text-stone-500' : ''}`}>
+              <tr
+                key={c.codigo}
+                id={ID_DA_CONTA(c.codigo)}
+                className={`scroll-mt-4 border-t border-stone-200 target:bg-amber-50 ${c.sintetica ? 'text-stone-500' : ''}`}
+              >
                 <td className="px-3 py-2 font-mono text-xs" style={{ paddingLeft: `${0.75 + (c.grau - 1) * 0.75}rem` }}>
                   {c.codigo}
                 </td>

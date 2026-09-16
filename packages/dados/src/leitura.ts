@@ -11,12 +11,21 @@
  * derivado daqui faria este pacote dono de resultado, que o ADR-0009 disse que
  * não se persiste e, por extensão, não se serve de cá.
  */
-import { and, asc, desc, eq } from 'drizzle-orm';
-import type { LinhaBalancete } from '@estoque-pme/importador';
-import type { Lancamento, Nivel } from '@estoque-pme/motor-calculo';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import type { ContaRazao, LinhaBalancete } from '@estoque-pme/importador';
+import type { Ancora, Lancamento, Nivel } from '@estoque-pme/motor-calculo';
 import type { Transacao } from './banco';
-import { consumoDeLinha, custoMateriaisDeLinha, perdaDeLinha, saldoDeLinha } from './codec';
-import { balanceteLinha, importacao, lancamentoNivel, periodo } from './schema';
+import { ancoraDeLinha, consumoDeLinha, custoMateriaisDeLinha, perdaDeLinha, saldoDeLinha } from './codec';
+import {
+  balanceteLinha,
+  diagnosticoImportacao,
+  diagnosticoPeriodo,
+  importacao,
+  lancamentoNivel,
+  periodo,
+  razaoConta,
+  razaoLancamento,
+} from './schema';
 
 const NIVEIS: readonly Nivel[] = ['MP', 'PP', 'PA'];
 
@@ -197,4 +206,137 @@ export interface ImportacaoLida {
   readonly criadas: number;
   readonly atualizadas: number;
   readonly em: Date;
+}
+
+/** Um diagnóstico como a tela o vê: decodificado, com a âncora inteira. */
+export interface DiagnosticoLido {
+  readonly origem: 'arquivo' | 'mapeamento';
+  readonly severidade: 'erro' | 'aviso' | 'info';
+  readonly codigo: string;
+  readonly mensagem: string;
+  readonly ancora: Ancora;
+}
+
+export interface PeriodoDetalhado {
+  readonly competencia: { readonly ano: number; readonly mes: number };
+  readonly periodo: PeriodoLido;
+  /** Do mapeamento — recalculável, keyed no período (ADR-0009). */
+  readonly diagnosticos: readonly DiagnosticoLido[];
+  /** As linhas do balancete como importadas: é o destino da âncora `linha`. */
+  readonly linhas: readonly LinhaBalancete[];
+  /** O razão do período, se importado: destino da âncora `lancamento`. */
+  readonly razao: readonly ContaRazao[];
+  readonly importacoes: readonly ImportacaoLida[];
+}
+
+/**
+ * Tudo o que a página do período mostra, numa leitura só.
+ *
+ * Os diagnósticos vêm de dois lugares por natureza (ADR-0009): os do arquivo
+ * são imutáveis e moram na importação; os do mapeamento são reescritos a cada
+ * apuração e moram no período. A tela os lista juntos, mas com a origem dita.
+ */
+export async function periodoDetalhado(
+  tx: Transacao,
+  empresaId: string,
+  c: { readonly ano: number; readonly mes: number },
+): Promise<PeriodoDetalhado | null> {
+  const todos = await lancamentosDaEmpresa(tx, empresaId);
+  const periodo = todos.find((p) => {
+    const comp = p.estado === 'apurado' ? p.lancamento.competencia : p.competencia;
+    return comp.ano === c.ano && comp.mes === c.mes;
+  });
+  if (periodo === undefined) return null;
+
+  const daCompetencia = (
+    t: typeof diagnosticoPeriodo | typeof balanceteLinha | typeof razaoConta | typeof razaoLancamento,
+  ) => and(eq(t.empresaId, empresaId), eq(t.ano, c.ano), eq(t.mes, c.mes));
+
+  const doPeriodo = await tx
+    .select()
+    .from(diagnosticoPeriodo)
+    .where(daCompetencia(diagnosticoPeriodo));
+
+  const importacoes = (await importacoesDaEmpresa(tx, empresaId)).filter(
+    (i) => i.competencia.ano === c.ano && i.competencia.mes === c.mes,
+  );
+  const doArquivo =
+    importacoes.length === 0
+      ? []
+      : await tx
+          .select()
+          .from(diagnosticoImportacao)
+          .where(
+            inArray(
+              diagnosticoImportacao.importacaoId,
+              importacoes.map((i) => i.id),
+            ),
+          );
+
+  const decodificar = (
+    d: {
+      severidade: string;
+      codigo: string;
+      mensagem: string;
+      ancoraTipo: string | null;
+      ancoraLinha: number | null;
+      ancoraColuna: string | null;
+      ancoraConta: string | null;
+      ancoraNivel: string | null;
+    },
+    origem: 'arquivo' | 'mapeamento',
+  ): DiagnosticoLido => ({
+    origem,
+    severidade: d.severidade as DiagnosticoLido['severidade'],
+    codigo: d.codigo,
+    mensagem: d.mensagem,
+    ancora: ancoraDeLinha({
+      tipo: d.ancoraTipo,
+      linha: d.ancoraLinha,
+      coluna: d.ancoraColuna,
+      conta: d.ancoraConta,
+      nivel: d.ancoraNivel,
+    }),
+  });
+
+  const linhas = await tx.select().from(balanceteLinha).where(daCompetencia(balanceteLinha));
+  const contas = await tx.select().from(razaoConta).where(daCompetencia(razaoConta));
+  const lancamentos = await tx.select().from(razaoLancamento).where(daCompetencia(razaoLancamento));
+
+  return {
+    competencia: c,
+    periodo,
+    diagnosticos: [
+      ...doArquivo.map((d) => decodificar(d, 'arquivo')),
+      ...doPeriodo.map((d) => decodificar(d, 'mapeamento')),
+    ],
+    linhas: linhas.map((l) => ({
+      linha: l.linha,
+      codigo: l.conta,
+      descricao: l.descricao,
+      saldoAnterior: l.saldoAnterior,
+      debito: l.debito,
+      credito: l.credito,
+      saldoAtual: l.saldoAtual,
+      grau: l.grau,
+      sintetica: l.sintetica,
+    })),
+    razao: contas.map((conta) => ({
+      codigo: conta.conta,
+      descricao: conta.descricao,
+      saldoAnterior: conta.saldoAnterior,
+      saldoAtual: conta.saldoAtual,
+      lancamentos: lancamentos
+        .filter((l) => l.conta === conta.conta)
+        .map((l) => ({
+          linha: l.linha,
+          data: l.data,
+          historico: l.historico,
+          debito: l.debito,
+          credito: l.credito,
+          contrapartida: l.contrapartida,
+        })),
+    })),
+    importacoes,
+  };
 }
