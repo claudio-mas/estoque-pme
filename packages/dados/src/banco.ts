@@ -2,9 +2,15 @@
  * A conexão, e a única porta por onde se escreve.
  *
  * Toda operação passa por `comEmpresa`, que abre transação e declara
- * `app.empresa_id` com `SET LOCAL`. Não é conveniência: é o que faz a RLS valer
- * — sem a declaração, `current_setting` devolve null, null não casa com nada, e
- * a consulta volta vazia em vez de vazar. A ausência **fecha**.
+ * `app.empresa_id` e `app.usuario_id` com `SET LOCAL`. Não é conveniência: é o
+ * que faz a RLS valer — sem a declaração, `current_setting` devolve null, null
+ * não casa com nada, e a consulta volta vazia em vez de vazar. A ausência
+ * **fecha**.
+ *
+ * O usuário entra junto porque a policy de escrita exige `editor` (RF-23), e
+ * ela só pode conferir isso se souber quem está na transação. Quem chama já
+ * conferiu o vínculo antes de chegar aqui — mas a policy confere de novo, e é
+ * a segunda conferência que vale contra uma action chamada por fora.
  *
  * `SET LOCAL` morre no fim da transação, então nada vaza entre requisições num
  * pool. E a conexão é de um papel comum, não de superusuário: quem tem
@@ -20,8 +26,15 @@ export type Banco = PgDatabase<PgQueryResultHKT, typeof schema>;
 /** A transação por dentro de `comEmpresa`: mesma API, escopo já declarado. */
 export type Transacao = Parameters<Parameters<Banco['transaction']>[0]>[0];
 
+/** Quem está na transação, e em qual empresa. */
+export interface Escopo {
+  readonly empresaId: string;
+  /** Sem usuário, a transação só lê: nenhuma policy de escrita passa. */
+  readonly usuarioId?: string;
+}
+
 /**
- * Abre uma transação com a empresa declarada.
+ * Abre uma transação com a empresa — e o usuário — declarados.
  *
  * Tudo o que a importação faz cabe numa transação só, de propósito: o ADR-0009
  * dispensa a fonte de ter coluna de versão **porque** fonte e lançamento são
@@ -30,11 +43,12 @@ export type Transacao = Parameters<Parameters<Banco['transaction']>[0]>[0];
  */
 export async function comEmpresa<T>(
   banco: Banco,
-  empresaId: string,
+  escopo: Escopo,
   corpo: (tx: Transacao) => Promise<T>,
 ): Promise<T> {
   return banco.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.empresa_id', ${empresaId}, true)`);
+    await tx.execute(sql`select set_config('app.empresa_id', ${escopo.empresaId}, true)`);
+    await tx.execute(sql`select set_config('app.usuario_id', ${escopo.usuarioId ?? ''}, true)`);
     return corpo(tx);
   });
 }

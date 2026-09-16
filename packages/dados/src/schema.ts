@@ -52,6 +52,53 @@ export const usuario = pgTable('user', {
   image: text('image'),
 });
 
+/**
+ * As outras tabelas do adapter Drizzle do Auth.js, no schema canônico dele.
+ *
+ * Ficam **fora da RLS**, como `user`: são por usuário, não por empresa, e o
+ * Auth.js as lê antes de existir empresa corrente — forçar policy aqui daria
+ * resposta nula justamente no login. É o limite consciente da RLS neste
+ * produto: ela isola empresas entre si, não usuários do próprio serviço
+ * (ADR-0012).
+ */
+export const conta = pgTable(
+  'account',
+  {
+    userId: text('userId')
+      .notNull()
+      .references(() => usuario.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('providerAccountId').notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: text('token_type'),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
+  },
+  (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] })],
+);
+
+export const sessao = pgTable('session', {
+  sessionToken: text('sessionToken').primaryKey(),
+  userId: text('userId')
+    .notNull()
+    .references(() => usuario.id, { onDelete: 'cascade' }),
+  expires: timestamp('expires', { withTimezone: true }).notNull(),
+});
+
+export const tokenDeVerificacao = pgTable(
+  'verificationToken',
+  {
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.identifier, t.token] })],
+);
+
 export const empresa = pgTable('empresa', {
   id: uuid('id').primaryKey().defaultRandom(),
   nome: text('nome').notNull(),
@@ -75,9 +122,18 @@ export const usuarioEmpresa = pgTable(
     empresaId: uuid('empresa_id')
       .notNull()
       .references(() => empresa.id, { onDelete: 'cascade' }),
+    /**
+     * `editor` escreve, `leitor` só lê (RF-23). É a policy de escrita que o
+     * exige, não a tela: política de acesso retrofitada é a que embarca com
+     * buraco, então ela entra junto com a coluna.
+     */
+    papel: text('papel').notNull().default('editor'),
     criadoEm: criadoEm(),
   },
-  (t) => [primaryKey({ columns: [t.usuarioId, t.empresaId] })],
+  (t) => [
+    primaryKey({ columns: [t.usuarioId, t.empresaId] }),
+    check('usuario_empresa_papel', sql`${t.papel} in ('editor', 'leitor')`),
+  ],
 );
 
 /**

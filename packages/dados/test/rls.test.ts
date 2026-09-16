@@ -10,23 +10,28 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bancoDeTeste, semearEmpresa, type Banco } from './banco';
 
+import type { Escopo } from '../src/banco';
+import { vincular } from '../src/semente';
+
 let banco: Banco;
-let safra: string;
-let concorrente: string;
+let safra: Escopo;
+let concorrente: Escopo;
+let leitor: Escopo;
 
 beforeAll(async () => {
   banco = await bancoDeTeste();
   safra = await semearEmpresa(banco, 'Alimentos Boa Safra Ltda');
   concorrente = await semearEmpresa(banco, 'Laticínios Vale Verde Ltda');
 
-  for (const [empresa, mes] of [
-    [safra, 8],
-    [concorrente, 8],
-  ] as const) {
-    await banco.comoEmpresa(empresa, async (pg) => {
-      await pg.query('insert into periodo (empresa_id, ano, mes, estado) values ($1, 2025, $2, $3)', [
-        empresa,
-        mes,
+  // Um leitor na Boa Safra: vê, mas não escreve (RF-23).
+  leitor = await banco.comoDono((db) =>
+    vincular(db, { email: 'socio@boasafra.com.br', empresaId: safra.empresaId, papel: 'leitor' }),
+  );
+
+  for (const escopo of [safra, concorrente]) {
+    await banco.comoEmpresa(escopo, async (pg) => {
+      await pg.query('insert into periodo (empresa_id, ano, mes, estado) values ($1, 2025, 8, $2)', [
+        escopo.empresaId,
         'importado',
       ]);
     });
@@ -37,8 +42,8 @@ afterAll(async () => {
   await banco.fechar();
 });
 
-const contarPeriodos = (empresa: string | null) =>
-  banco.comoEmpresa(empresa, async (pg) => {
+const contarPeriodos = (escopo: Escopo | null) =>
+  banco.comoEmpresa(escopo, async (pg) => {
     const { rows } = await pg.query<{ n: number }>('select count(*)::int as n from periodo');
     return rows[0]?.n ?? -1;
   });
@@ -60,7 +65,31 @@ describe('isolamento por empresa', () => {
       banco.comoEmpresa(safra, async (pg) => {
         await pg.query(
           'insert into periodo (empresa_id, ano, mes, estado) values ($1, 2025, 9, $2)',
-          [concorrente, 'importado'],
+          [concorrente.empresaId, 'importado'],
+        );
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('o leitor vê a empresa dele e não escreve nela (RF-23)', async () => {
+    expect(await contarPeriodos(leitor)).toBe(1);
+    // A policy recusa, não a tela: é o que vale contra uma action chamada por fora.
+    await expect(
+      banco.comoEmpresa(leitor, async (pg) => {
+        await pg.query(
+          'insert into periodo (empresa_id, ano, mes, estado) values ($1, 2025, 10, $2)',
+          [leitor.empresaId, 'importado'],
+        );
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('sem usuário declarado, nem o editor escreve — a ausência fecha', async () => {
+    await expect(
+      banco.comoEmpresa({ empresaId: safra.empresaId }, async (pg) => {
+        await pg.query(
+          'insert into periodo (empresa_id, ano, mes, estado) values ($1, 2025, 11, $2)',
+          [safra.empresaId, 'importado'],
         );
       }),
     ).rejects.toThrow();
@@ -70,7 +99,7 @@ describe('isolamento por empresa', () => {
     const achou = await banco.comoEmpresa(safra, async (pg) => {
       const { rows } = await pg.query<{ n: number }>(
         'select count(*)::int as n from empresa where id = $1',
-        [concorrente],
+        [concorrente.empresaId],
       );
       return rows[0]?.n ?? -1;
     });
@@ -83,7 +112,7 @@ describe('isolamento por empresa', () => {
       await pg.query(
         `insert into importacao (id, empresa_id, origem, artefato, ano, mes)
          values ($1, $2, 'ERP Desconhecido', 'balancete', 2025, 8)`,
-        [idDaImportacao, concorrente],
+        [idDaImportacao, concorrente.empresaId],
       );
       await pg.query(
         `insert into diagnostico_importacao (importacao_id, severidade, codigo, mensagem, ancora_tipo)

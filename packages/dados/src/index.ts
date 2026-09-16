@@ -46,10 +46,16 @@ export type {
   LinhaDeSaldo,
 } from './codec';
 
-export { EMPRESA_CORRENTE, ISOLAMENTO, sqlDeRls } from './rls';
+export { EH_EDITOR, EMPRESA_CORRENTE, ISOLAMENTO, USUARIO_CORRENTE, sqlDeRls } from './rls';
 
 export { comEmpresa } from './banco';
-export type { Banco, Transacao } from './banco';
+export type { Banco, Escopo, Transacao } from './banco';
+
+export { lancamentosDaEmpresa } from './leitura';
+export type { PeriodoLido } from './leitura';
+
+export { semear, vincular } from './semente';
+export type { Semeado, Semente } from './semente';
 
 export { apurarEmpresa, apurarPeriodo, mapeamentoCorrente } from './apuracao';
 export type { ResultadoApuracao } from './apuracao';

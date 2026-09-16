@@ -314,6 +314,27 @@ describe('aplicação', () => {
     expect(diagnosticos.map((d) => d.codigo)).toContain('descricao-divergente');
   });
 
+  it('conta mapeada que não veio no arquivo é indefinido, nunca zero', () => {
+    // Há ERP que omite conta sem movimento, e há exportação parcial. Nos dois
+    // casos o saldo é desconhecido — e somar zero sobre lista vazia seria o
+    // "ausência vira zero" que o projeto proíbe. O CHECK do banco pegou isto.
+    const semMp = LINHAS.filter((l) => l.codigo !== '1.1.3.01');
+    const { lancamento } = aplicarMapeamento(BASE, balancete(semMp));
+    const mp = lancamento?.estoque.MP;
+    if (mp?.estado !== 'indefinido') throw new Error('esperava indefinido');
+    expect(mp.motivo.codigo).toBe('conta-nao-veio-no-arquivo');
+  });
+
+  it('CMV mapeado que não veio no arquivo é erro: não há lançamento', () => {
+    // Mapeado não é presente. Sem CMV não há PME de PP nem de PA, e o banco
+    // registra "apurado ⇒ cmv" como invariante — produzir lançamento aqui o
+    // violaria.
+    const semCmv = LINHAS.filter((l) => l.codigo !== '4.1.1.01');
+    const { lancamento, diagnosticos } = aplicarMapeamento(BASE, balancete(semCmv));
+    expect(lancamento).toBeNull();
+    expect(diagnosticos.map((d) => d.codigo)).toContain('cmv-nao-veio-no-arquivo');
+  });
+
   it('não produz lançamento quando o mapeamento tem erro', () => {
     const { lancamento, diagnosticos } = aplicarMapeamento(montar([PA, CMV]), balancete(LINHAS));
     expect(lancamento).toBeNull();

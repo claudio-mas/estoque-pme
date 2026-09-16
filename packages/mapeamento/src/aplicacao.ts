@@ -237,6 +237,14 @@ function saldoDoNivel(
     return { estado: 'indefinido', motivo: motivoDoNivel('nivel-nao-mapeado', nivel) };
   }
 
+  // Mapeada não é presente. Há ERP que omite conta sem movimento, e há
+  // exportação parcial: nos dois casos o saldo é desconhecido, e somar zero
+  // sobre lista vazia é o "ausência vira zero" que o projeto proíbe.
+  const presentes = entradas.flatMap((entrada) => linhasDe(entrada, linhas));
+  if (presentes.length === 0) {
+    return { estado: 'indefinido', motivo: motivoDoNivel('conta-nao-veio-no-arquivo', nivel) };
+  }
+
   let fechamento: Centavos = 0n;
   let abertura: Centavos | null = 0n;
 
@@ -382,6 +390,20 @@ export function aplicarMapeamento(
     temColunasDeMovimento,
     diagnosticos,
   );
+
+  // A validação garante CMV **mapeado**; este arquivo pode não o trazer. Sem
+  // CMV não há PME de PP nem de PA, e um lançamento com CMV nulo violaria o
+  // que o banco registra como invariante (ADR-0008). É erro, não lançamento.
+  if (cmv === null && entradasDe(mapeamento, 'cmv').length > 0) {
+    diagnosticos.push({
+      severidade: 'erro',
+      codigo: 'cmv-nao-veio-no-arquivo',
+      mensagem:
+        'A conta classificada como CMV não veio neste arquivo. Sem CMV não há PME de PP nem de PA; ' +
+        'confira se o balancete está completo.',
+      ancora: { tipo: 'arquivo' },
+    });
+  }
   const perdas = {
     MP: perdasDoNivel('MP', mapeamento, linhas, temColunasDeMovimento, diagnosticos),
     PP: perdasDoNivel('PP', mapeamento, linhas, temColunasDeMovimento, diagnosticos),

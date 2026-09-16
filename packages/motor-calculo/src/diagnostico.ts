@@ -50,6 +50,7 @@ export type CodigoDeMotivo =
   | 'nivel-nao-mapeado'
   | 'nivel-incompleto'
   | 'saldo-de-fechamento-ausente'
+  | 'conta-nao-veio-no-arquivo'
   | 'sem-razao'
   | 'razao-sem-conta-do-nivel'
   | 'contrapartida-ausente'
@@ -127,6 +128,8 @@ export function mensagemDoMotivo(motivo: Motivo): string {
       return `O estoque não é conhecido por inteiro: há conta pendente ${onde}.`;
     case 'saldo-de-fechamento-ausente':
       return `O arquivo não traz saldo de fechamento ${onde}.`;
+    case 'conta-nao-veio-no-arquivo':
+      return `Nenhuma das contas classificadas como estoque ${onde} veio neste arquivo. Mapeada não é presente: o saldo é desconhecido, não zero.`;
     case 'sem-razao':
       return `Sem razão, o consumo não é medido ${onde}.`;
     case 'razao-sem-conta-do-nivel':
