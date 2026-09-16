@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Four packages exist; no app yet. Three are pure; the fourth, `dados`, deliberately is not.
+Four packages and the first cut of the app. Three packages are pure; `dados` deliberately is not.
 
 `packages/motor-calculo` is the dependency-free engine the whole stack decision rests on (D11) — the PME in
 both directions, the projection methods, the derived indicators and the budget ceilings, tested against the
@@ -58,7 +58,20 @@ app.empresa_id`; note that `FORCE ROW LEVEL SECURITY` does **not** contain a sup
 under an ordinary role. Tests run on PGlite, in-process, applying the shipped migration files.
 
 The ingestion path is complete: ERP file → reader → mapping → lançamento in the database, idempotent on
-reimport. What is missing is the app.
+reimport.
+
+`apps/web` is the app — Next.js 16 App Router, Server Actions with Zod at the boundary, Auth.js v5 with
+**magic link and no password** (`docs/adr/0013`), Tailwind with no component library. The current empresa
+lives in the URL (`/empresas/[id]/…`), never in a cookie. **Every Server Action re-checks the vínculo** through
+`src/servidor/acesso.ts` (`naEmpresa`): the layout only decides whether a page opens; it is never what makes
+a write safe, because actions do not pass through layouts and the `empresaId` in a form is a field anyone can
+edit. In development the database is PGlite persisted to `.dados/` — real Postgres, no Docker — migrated and
+seeded by the app itself; in production it is `node-postgres` on `DATABASE_URL`, which must be the
+`aplicacao` role's string, never the owner's. Empresas are created by `npm run semear`, not by the app: the
+`with check (true)` on `empresa_criacao` is a dated debt, to be revisited when self-signup exists.
+
+Next.js 16 differs from older training data — `params` is a Promise, middleware is `proxy.ts`, caching is
+opt-in — so read `node_modules/next/dist/docs/` before writing app code; `apps/web/AGENTS.md` says the same.
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
@@ -69,6 +82,8 @@ npm workspaces, Node 22+. Commands run from the repository root:
 | `npm run typecheck` | `tsc --noEmit` over every workspace |
 | `npm test --workspace @estoque-pme/motor-calculo` | One package only (`importador`, `mapeamento`, `dados` likewise) |
 | `npm run migracoes --workspace @estoque-pme/dados` | Regenerates `migracoes/` — drizzle-kit for the schema, then the hand-written RLS file |
+| `npm run dev --workspace @estoque-pme/web` | The app on PGlite. Needs `AUTH_SECRET`; without `SMTP_URL` the login link prints to the terminal |
+| `npm run semear --workspace @estoque-pme/web -- <email> "<empresa>"` | First user, empresa and vínculo, as the owner role |
 
 On Windows, run npm from PowerShell rather than Git Bash: package install scripts spawn `cmd.exe`, which does
 not inherit Git Bash's `PATH` and fails to find `node`.
@@ -84,6 +99,7 @@ Git repo on branch `main`, private remote at https://github.com/claudio-mas/esto
 | `packages/importador/` | Balancete reader. `test/balancete.test.ts` carries a realistic Latin-1 fixture |
 | `packages/mapeamento/` | Account mapping (RF-28). `test/integracao.test.ts` runs real bytes through all three packages |
 | `packages/dados/` | Schema, migrations, codecs and the write path. `test/escrita.test.ts` proves RF-05 idempotency on PGlite |
+| `apps/web/` | The app. `src/servidor/acesso.ts` is the DAL every action goes through; `semear.mts` creates the first empresa |
 | `docs/adr/` | Decisions that are expensive to reverse. D1–D11 stay here in this file; ADRs are for what came after |
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,

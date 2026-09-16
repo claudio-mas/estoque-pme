@@ -18,7 +18,10 @@
  * As correções nunca foram publicadas no npm. ExcelJS já estava na stack para
  * escrever XLSX, então é uma dependência em vez de duas.
  */
-import { Workbook } from 'exceljs';
+// Import padrão, não nomeado: o ExcelJS é CommonJS, e `import { Workbook }`
+// funciona sob bundler (Vitest, Next) mas não em ESM nativo do Node — que é
+// como o script de semente do app o carrega.
+import ExcelJS from 'exceljs';
 import { DECIMAL_DA_PLANILHA } from './aba';
 import type { Aba, Planilha } from './aba';
 import type { RegistroCsv } from './csv';
@@ -78,7 +81,7 @@ function textoDaCelula(valor: unknown): string {
  * planilha inteira.
  */
 export async function lerPlanilha(bytes: Uint8Array): Promise<Planilha> {
-  const workbook = new Workbook();
+  const workbook = new ExcelJS.Workbook();
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   await workbook.xlsx.load(buffer as ArrayBuffer);
 
