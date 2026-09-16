@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Three pure packages exist; no app and no database yet.
+Four packages exist; no app yet. Three are pure; the fourth, `dados`, deliberately is not.
 
 `packages/motor-calculo` is the dependency-free engine the whole stack decision rests on (D11) — the PME in
 both directions, the projection methods, the derived indicators and the budget ceilings, tested against the
@@ -45,17 +45,30 @@ converted to the same `RegistroCsv` the CSV reader produces, so header recogniti
 column roles are the one implementation, and balancete and razão both got XLSX for free. `Dialeto` is now a
 union — a delimited file has an encoding and a delimiter, a spreadsheet has neither.
 
-Still missing on the ingestion path: persistence with the idempotent `período + nível` key (RF-05), which is
-also where the mapping's versioning and the history recalculation live.
+`packages/dados` is the persistence, and it composes the other three: schema, migrations, codecs and the
+**write path**. It is not pure — it has Drizzle and Postgres — and that breaks no invariant: the D11 rule is
+about the calculation engine. Three decisions govern it (`docs/adr/0008`–`0010`): every state-carrying union
+is stored as a state column plus nullable payload plus a biconditional `CHECK` (the state is never inferred
+from nulls); the `Lançamento` is a **materialised projection** of the persisted source, recomputed
+synchronously when the mapping or a typed value changes, with one version column per dependency as a
+staleness detector; and the typed custo de materiais is a *valor informado*, not a premissa, in its own
+append-only table so that reimporting never erases it. Import writes source and lançamento in one transaction
+— that is what lets the source go without a version column. RLS isolates by empresa via `SET LOCAL
+app.empresa_id`; note that `FORCE ROW LEVEL SECURITY` does **not** contain a superuser, so app and tests run
+under an ordinary role. Tests run on PGlite, in-process, applying the shipped migration files.
+
+The ingestion path is complete: ERP file → reader → mapping → lançamento in the database, idempotent on
+reimport. What is missing is the app.
 
 npm workspaces, Node 22+. Commands run from the repository root:
 
 | Command | What it does |
 |---------|--------------|
-| `npm install` | Installs the workspace. Only `importador` has a runtime dependency (ExcelJS); the engine has none |
+| `npm install` | Installs the workspace. Runtime dependencies: `importador` (ExcelJS) and `dados` (Drizzle); the engine has none |
 | `npm test` | Vitest over every workspace |
 | `npm run typecheck` | `tsc --noEmit` over every workspace |
-| `npm test --workspace @estoque-pme/motor-calculo` | One package only (`@estoque-pme/importador` for the other) |
+| `npm test --workspace @estoque-pme/motor-calculo` | One package only (`importador`, `mapeamento`, `dados` likewise) |
+| `npm run migracoes --workspace @estoque-pme/dados` | Regenerates `migracoes/` — drizzle-kit for the schema, then the hand-written RLS file |
 
 On Windows, run npm from PowerShell rather than Git Bash: package install scripts spawn `cmd.exe`, which does
 not inherit Git Bash's `PATH` and fails to find `node`.
@@ -70,6 +83,7 @@ Git repo on branch `main`, private remote at https://github.com/claudio-mas/esto
 | `packages/motor-calculo/` | The calculation engine. `test/exemplo-trabalhado.test.ts` is the golden fixture |
 | `packages/importador/` | Balancete reader. `test/balancete.test.ts` carries a realistic Latin-1 fixture |
 | `packages/mapeamento/` | Account mapping (RF-28). `test/integracao.test.ts` runs real bytes through all three packages |
+| `packages/dados/` | Schema, migrations, codecs and the write path. `test/escrita.test.ts` proves RF-05 idempotency on PGlite |
 | `docs/adr/` | Decisions that are expensive to reverse. D1–D11 stay here in this file; ADRs are for what came after |
 
 **Editing the PRD:** edit `prd-estoque-pme.html` and republish with the Artifact tool passing that URL as `url`,
