@@ -11,9 +11,13 @@ drop policy if exists "empresa_leitura" on "empresa";
 drop policy if exists "empresa_criacao" on "empresa";
 drop policy if exists "empresa_alteracao" on "empresa";
 drop policy if exists "empresa_remocao" on "empresa";
-create policy "empresa_leitura" on "empresa" for select using (id = nullif(current_setting('app.empresa_id', true), '')::uuid);
+create policy "empresa_leitura" on "empresa" for select using (id = nullif(current_setting('app.empresa_id', true), '')::uuid or exists (
+        select 1 from "usuario_empresa" ue
+         where ue.empresa_id = "empresa".id and ue.usuario_id = nullif(current_setting('app.usuario_id', true), '')));
 create policy "empresa_criacao" on "empresa" for insert with check (true);
-create policy "empresa_alteracao" on "empresa" for update using (id = nullif(current_setting('app.empresa_id', true), '')::uuid) with check (id = nullif(current_setting('app.empresa_id', true), '')::uuid and exists (
+create policy "empresa_alteracao" on "empresa" for update using (id = nullif(current_setting('app.empresa_id', true), '')::uuid or exists (
+        select 1 from "usuario_empresa" ue
+         where ue.empresa_id = "empresa".id and ue.usuario_id = nullif(current_setting('app.usuario_id', true), ''))) with check (id = nullif(current_setting('app.empresa_id', true), '')::uuid and exists (
     select 1 from "usuario_empresa" ue
      where ue.usuario_id = nullif(current_setting('app.usuario_id', true), '')
        and ue.empresa_id = nullif(current_setting('app.empresa_id', true), '')::uuid
@@ -30,13 +34,13 @@ drop policy if exists "usuario_empresa_leitura" on "usuario_empresa";
 drop policy if exists "usuario_empresa_criacao" on "usuario_empresa";
 drop policy if exists "usuario_empresa_alteracao" on "usuario_empresa";
 drop policy if exists "usuario_empresa_remocao" on "usuario_empresa";
-create policy "usuario_empresa_leitura" on "usuario_empresa" for select using ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid);
+create policy "usuario_empresa_leitura" on "usuario_empresa" for select using ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or "usuario_id" = nullif(current_setting('app.usuario_id', true), ''));
 create policy "usuario_empresa_criacao" on "usuario_empresa" for insert with check ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid and exists (
     select 1 from "usuario_empresa" ue
      where ue.usuario_id = nullif(current_setting('app.usuario_id', true), '')
        and ue.empresa_id = nullif(current_setting('app.empresa_id', true), '')::uuid
        and ue.papel = 'editor'));
-create policy "usuario_empresa_alteracao" on "usuario_empresa" for update using ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid) with check ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid and exists (
+create policy "usuario_empresa_alteracao" on "usuario_empresa" for update using ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid or "usuario_id" = nullif(current_setting('app.usuario_id', true), '')) with check ("empresa_id" = nullif(current_setting('app.empresa_id', true), '')::uuid and exists (
     select 1 from "usuario_empresa" ue
      where ue.usuario_id = nullif(current_setting('app.usuario_id', true), '')
        and ue.empresa_id = nullif(current_setting('app.empresa_id', true), '')::uuid

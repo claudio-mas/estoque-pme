@@ -11,12 +11,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bancoDeTeste, semearEmpresa, type Banco } from './banco';
 
 import type { Escopo } from '../src/banco';
-import { vincular } from '../src/semente';
+import { comEmpresa, comUsuario } from '../src/banco';
+import { empresasDoUsuario, vinculoDe } from '../src/acesso';
+import { vincular, type Semeado } from '../src/semente';
 
 let banco: Banco;
-let safra: Escopo;
-let concorrente: Escopo;
-let leitor: Escopo;
+let safra: Semeado;
+let concorrente: Semeado;
+let leitor: Semeado;
 
 beforeAll(async () => {
   banco = await bancoDeTeste();
@@ -128,5 +130,38 @@ describe('isolamento por empresa', () => {
       return rows[0]?.n ?? -1;
     });
     expect(vistos).toBe(0);
+  });
+});
+
+describe('a troca de contexto (RF-23)', () => {
+  it('o usuário lista as próprias empresas sem declarar nenhuma', async () => {
+    const minhas = await comUsuario(banco.db, safra.usuarioId, (tx) =>
+      empresasDoUsuario(tx, safra.usuarioId),
+    );
+    expect(minhas.map((v) => v.nome)).toEqual(['Alimentos Boa Safra Ltda']);
+    expect(minhas[0]?.papel).toBe('editor');
+  });
+
+  it('e não vê as dos outros por essa porta', async () => {
+    const doLeitor = await comUsuario(banco.db, leitor.usuarioId, (tx) =>
+      empresasDoUsuario(tx, leitor.usuarioId),
+    );
+    // O sócio leitor está só na Boa Safra; o Vale Verde não aparece.
+    expect(doLeitor.map((v) => v.nome)).toEqual(['Alimentos Boa Safra Ltda']);
+  });
+
+  it('o vínculo conferido dentro da empresa devolve o papel, e fora dela nada', async () => {
+    const papel = await comEmpresa(banco.db, leitor, (tx) =>
+      vinculoDe(tx, leitor.empresaId, leitor.usuarioId),
+    );
+    expect(papel).toBe('leitor');
+
+    // Empresa trocada no formulário: a policy esconde a linha e o vínculo "não existe".
+    const forjado = await comEmpresa(
+      banco.db,
+      { empresaId: concorrente.empresaId, usuarioId: leitor.usuarioId },
+      (tx) => vinculoDe(tx, concorrente.empresaId, leitor.usuarioId),
+    );
+    expect(forjado).toBeNull();
   });
 });

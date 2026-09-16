@@ -1,0 +1,43 @@
+{
+  "name": "@estoque-pme/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "O app: Next.js, Auth.js e as telas. Compoe os pacotes; nao tem regra propria.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "semear": "tsx semear.mts"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.3",
+    "@electric-sql/pglite": "^0.5.8",
+    "@estoque-pme/dados": "0.1.0",
+    "@estoque-pme/importador": "0.1.0",
+    "@estoque-pme/mapeamento": "0.1.0",
+    "@estoque-pme/motor-calculo": "0.1.0",
+    "drizzle-orm": "^0.45.2",
+    "next": "16.3.5",
+    "next-auth": "5.0.0-beta.32",
+    "nodemailer": "^7.0.0",
+    "pg": "^8.16.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/nodemailer": "^7.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3",
+    "vitest": "^5.0.0"
+  }
+}

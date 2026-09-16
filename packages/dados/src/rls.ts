@@ -27,7 +27,6 @@
 
 /** As tabelas que a RLS protege, e por qual coluna cada uma se liga à empresa. */
 export const ISOLAMENTO: Readonly<Record<string, string>> = {
-  usuario_empresa: 'empresa_id',
   importacao: 'empresa_id',
   mapeamento_versao: 'empresa_id',
   valor_informado: 'empresa_id',
@@ -81,11 +80,25 @@ export function sqlDeRls(): string {
   blocos.push(
     policies(
       'empresa',
-      `id = ${EMPRESA_CORRENTE}`,
+      `id = ${EMPRESA_CORRENTE} or exists (
+        select 1 from "usuario_empresa" ue
+         where ue.empresa_id = "empresa".id and ue.usuario_id = ${USUARIO_CORRENTE})`,
       `id = ${EMPRESA_CORRENTE} and ${EH_EDITOR}`,
     ).replace(
       /create policy "empresa_criacao"[^;]*;/,
       'create policy "empresa_criacao" on "empresa" for insert with check (true);',
+    ),
+  );
+
+  // `usuario_empresa` tem uma porta a mais na leitura: o usuário vê os próprios
+  // vínculos mesmo sem empresa declarada. É o que a tela de troca de contexto
+  // (RF-23) precisa — listar "minhas empresas" antes de escolher uma. A escrita
+  // continua exigindo empresa e editor.
+  blocos.push(
+    policies(
+      'usuario_empresa',
+      `"empresa_id" = ${EMPRESA_CORRENTE} or "usuario_id" = ${USUARIO_CORRENTE}`,
+      `"empresa_id" = ${EMPRESA_CORRENTE} and ${EH_EDITOR}`,
     ),
   );
 

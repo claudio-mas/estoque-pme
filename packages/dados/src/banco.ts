@@ -52,3 +52,23 @@ export async function comEmpresa<T>(
     return corpo(tx);
   });
 }
+
+/**
+ * Uma transação só com o usuário declarado — sem empresa.
+ *
+ * É a porta da tela de troca de contexto: antes de escolher uma empresa, o
+ * usuário precisa listar as dele, e a policy de `usuario_empresa` e de
+ * `empresa` abre essa leitura pelo `app.usuario_id`. Nenhuma escrita passa
+ * aqui: toda policy de escrita exige empresa.
+ */
+export async function comUsuario<T>(
+  banco: Banco,
+  usuarioId: string,
+  corpo: (tx: Transacao) => Promise<T>,
+): Promise<T> {
+  return banco.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.empresa_id', '', true)`);
+    await tx.execute(sql`select set_config('app.usuario_id', ${usuarioId}, true)`);
+    return corpo(tx);
+  });
+}
