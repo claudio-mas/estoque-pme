@@ -17,15 +17,31 @@ import { fileURLToPath } from 'node:url';
 
 const PASTA = join(dirname(fileURLToPath(import.meta.url)), '..', 'migracoes');
 
-/** O SQL das migrações numeradas mais a RLS, na ordem de aplicação. */
-export function sqlDasMigracoes(): string {
+const ler = (nome: string) => readFileSync(join(PASTA, nome), 'utf8');
+
+/** O DDL numerado, na ordem. Aplica-se **uma vez** por banco. */
+export function sqlDoSchema(): string {
   const numeradas = readdirSync(PASTA)
     .filter((nome) => /^\d{4}_.*\.sql$/.test(nome))
     .sort();
-  const ler = (nome: string) => readFileSync(join(PASTA, nome), 'utf8');
   // O drizzle-kit separa statements com `--> statement-breakpoint`.
-  const ddl = numeradas.map((nome) => ler(nome).split('--> statement-breakpoint').join('\n'));
-  return [...ddl, ler('rls.sql')].join('\n');
+  return numeradas.map((nome) => ler(nome).split('--> statement-breakpoint').join('\n')).join('\n');
+}
+
+/**
+ * A RLS. Idempotente: aplica-se em **todo** boot, depois do schema.
+ *
+ * Separada do DDL de propósito: o schema é aplicado uma vez, e a RLS muda entre
+ * versões — uma policy nova ou uma regra corrigida chega ao banco na próxima
+ * subida, sem ninguém lembrar de "migrar a RLS".
+ */
+export function sqlDaRls(): string {
+  return ler('rls.sql');
+}
+
+/** Os dois juntos, para um banco que nasce agora — o teste. */
+export function sqlDasMigracoes(): string {
+  return `${sqlDoSchema()}\n${sqlDaRls()}`;
 }
 
 /**

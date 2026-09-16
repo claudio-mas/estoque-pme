@@ -51,15 +51,15 @@ export { EH_EDITOR, EMPRESA_CORRENTE, ISOLAMENTO, USUARIO_CORRENTE, sqlDeRls } f
 export { comEmpresa, comUsuario } from './banco';
 export type { Banco, Escopo, Transacao } from './banco';
 
-export { lancamentosDaEmpresa } from './leitura';
-export type { PeriodoLido } from './leitura';
+export { contasDaEmpresa, importacoesDaEmpresa, lancamentosDaEmpresa } from './leitura';
+export type { ImportacaoLida, PeriodoLido } from './leitura';
 
 export { semear, vincular } from './semente';
 
 export { empresasDoUsuario, vinculoDe } from './acesso';
 export type { Papel, Vinculo } from './acesso';
 
-export { SQL_DO_PAPEL_DA_APLICACAO, sqlDasMigracoes } from './migracoes';
+export { SQL_DO_PAPEL_DA_APLICACAO, sqlDaRls, sqlDasMigracoes, sqlDoSchema } from './migracoes';
 export type { Semeado, Semente } from './semente';
 
 export { apurarEmpresa, apurarPeriodo, mapeamentoCorrente } from './apuracao';

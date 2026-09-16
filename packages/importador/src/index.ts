@@ -36,6 +36,9 @@ export { lerBalancete, lerBalanceteDeAba } from './balancete';
 export type { OpcoesBalancete } from './balancete';
 
 export { lerRazao, lerRazaoDeAba } from './razao';
+
+export { detectarArtefato } from './artefato';
+export type { Artefato, ArtefatoDetectado } from './artefato';
 export type { OpcoesRazao } from './razao';
 
 export { decodificar, normalizar } from './texto';

@@ -18,7 +18,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle as drizzlePglite } from 'drizzle-orm/pglite';
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { SQL_DO_PAPEL_DA_APLICACAO, sqlDasMigracoes, schema } from '@estoque-pme/dados';
+import { SQL_DO_PAPEL_DA_APLICACAO, sqlDaRls, sqlDoSchema, schema } from '@estoque-pme/dados';
 import type { Banco } from '@estoque-pme/dados';
 
 /** O banco e, em dev, o handle do PGlite para o Auth.js e a semente. */
@@ -35,12 +35,14 @@ declare global {
 
 async function abrirPglite(pasta: string): Promise<Conexao> {
   const pg = new PGlite(pasta);
-  // Migrar é idempotente só na RLS; o DDL numerado não é. Um "já aplicado"
-  // simples: se a tabela `empresa` existe, o schema está lá.
+  // O DDL numerado não é idempotente: um "já aplicado" simples — se a tabela
+  // `empresa` existe, o schema está lá. A RLS é, e muda entre versões: vai em
+  // todo boot, senão uma policy corrigida nunca chega ao banco de dev.
   const { rows } = await pg.query<{ existe: boolean }>(
     `select exists (select 1 from information_schema.tables where table_name = 'empresa') as existe`,
   );
-  if (!rows[0]?.existe) await pg.exec(sqlDasMigracoes());
+  if (!rows[0]?.existe) await pg.exec(sqlDoSchema());
+  await pg.exec(sqlDaRls());
   await pg.exec(SQL_DO_PAPEL_DA_APLICACAO);
 
   const db = drizzlePglite(pg, { schema }) as unknown as Banco;
