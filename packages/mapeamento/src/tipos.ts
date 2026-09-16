@@ -83,6 +83,7 @@ export type CodigoDeValidacao =
   | 'mp-nao-mapeada'
   | 'mp-declarada-ausente'
   | 'cmv-nao-mapeado'
+  | 'cmv-nao-veio-no-arquivo'
   | 'receita-nao-mapeada'
   | 'descricao-divergente'
   | 'movimento-indisponivel'

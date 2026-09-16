@@ -11,10 +11,12 @@ import { bancoDeTeste, semearEmpresa, type Banco } from './banco';
 
 let banco: Banco;
 let empresaId: string;
+let escopo: { empresaId: string; usuarioId: string };
 
 beforeAll(async () => {
   banco = await bancoDeTeste();
-  empresaId = await semearEmpresa(banco, 'Alimentos Boa Safra Ltda');
+  escopo = await semearEmpresa(banco, 'Alimentos Boa Safra Ltda');
+  empresaId = escopo.empresaId;
 });
 
 afterAll(async () => {
@@ -22,7 +24,7 @@ afterAll(async () => {
 });
 
 const gravarNivel = (campos: Readonly<Record<string, unknown>>) =>
-  banco.comoEmpresa(empresaId, async (pg) => {
+  banco.comoEmpresa(escopo, async (pg) => {
     const base: Record<string, unknown> = {
       empresa_id: empresaId,
       ano: 2025,
@@ -118,7 +120,7 @@ describe('a âncora recebe o mesmo tratamento', () => {
 
 describe('período', () => {
   const gravarPeriodo = (campos: Readonly<Record<string, unknown>>) =>
-    banco.comoEmpresa(empresaId, async (pg) => {
+    banco.comoEmpresa(escopo, async (pg) => {
       const base: Record<string, unknown> = {
         empresa_id: empresaId,
         ano: 2025,
@@ -152,7 +154,7 @@ describe('período', () => {
       custo_materiais_informado: 1_600_000n,
     });
 
-    const divergencia = await banco.comoEmpresa(empresaId, async (pg) => {
+    const divergencia = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ d: number }>(
         'select custo_materiais_divergencia as d from periodo where mes = 3',
       );

@@ -13,6 +13,7 @@ import {
   comEmpresa,
   importarBalancete,
   importarRazao,
+  lancamentosDaEmpresa,
   periodosDefasados,
   salvarMapeamento,
   salvarValorInformado,
@@ -74,10 +75,12 @@ const AGOSTO = { ano: 2025, mes: 8 } as const;
 
 let banco: Banco;
 let empresaId: string;
+let escopo: { empresaId: string; usuarioId: string };
 
 beforeAll(async () => {
   banco = await bancoDeTeste();
-  empresaId = await semearEmpresa(banco, 'Alimentos Boa Safra Ltda');
+  escopo = await semearEmpresa(banco, 'Alimentos Boa Safra Ltda');
+  empresaId = escopo.empresaId;
 });
 
 afterAll(async () => {
@@ -85,14 +88,14 @@ afterAll(async () => {
 });
 
 const contar = (tabela: string) =>
-  banco.comoEmpresa(empresaId, async (pg) => {
+  banco.comoEmpresa(escopo, async (pg) => {
     const { rows } = await pg.query<{ n: number }>(`select count(*)::int as n from ${tabela}`);
     return rows[0]?.n ?? -1;
   });
 
 describe('importar e apurar', () => {
   it('a primeira importação fica `importado`: o mapeamento ainda não existe', async () => {
-    const resumo = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resumo = await comEmpresa(banco.db, escopo, (tx) =>
       importarBalancete(tx, { empresaId, origem: 'Sistema Contábil XYZ' }, lerBalancete(balanceteDe('12.000,00'))),
     );
     expect(resumo.criadas).toBe(6);
@@ -104,7 +107,7 @@ describe('importar e apurar', () => {
   });
 
   it('salvar o mapeamento apura o histórico na mesma transação', async () => {
-    const resultado = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resultado = await comEmpresa(banco.db, escopo, (tx) =>
       salvarMapeamento(tx, { empresaId, motivo: 'primeira classificação' }, MAPEAMENTO),
     );
     expect(resultado.versao).toBe(1);
@@ -114,7 +117,7 @@ describe('importar e apurar', () => {
   });
 
   it('não deixa período defasado para trás', async () => {
-    const defasados = await comEmpresa(banco.db, empresaId, (tx) =>
+    const defasados = await comEmpresa(banco.db, escopo, (tx) =>
       periodosDefasados(tx, empresaId),
     );
     expect(defasados).toEqual([]);
@@ -124,7 +127,7 @@ describe('importar e apurar', () => {
 describe('reimportar substitui, nunca soma (RF-05)', () => {
   it('o mesmo arquivo de novo não duplica, e o resumo diz que atualizou', async () => {
     const antes = await contar('balancete_linha');
-    const resumo = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resumo = await comEmpresa(banco.db, escopo, (tx) =>
       importarBalancete(tx, { empresaId, origem: 'Sistema Contábil XYZ' }, lerBalancete(balanceteDe('12.000,00'))),
     );
     expect(resumo.criadas).toBe(0);
@@ -133,10 +136,10 @@ describe('reimportar substitui, nunca soma (RF-05)', () => {
   });
 
   it('o saldo corrigido substitui o antigo e o lançamento reapura junto', async () => {
-    await comEmpresa(banco.db, empresaId, (tx) =>
+    await comEmpresa(banco.db, escopo, (tx) =>
       importarBalancete(tx, { empresaId, origem: 'Sistema Contábil XYZ' }, lerBalancete(balanceteDe('12.047,00'))),
     );
-    const fechamento = await banco.comoEmpresa(empresaId, async (pg) => {
+    const fechamento = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ v: string }>(
         `select estoque_fechamento as v from lancamento_nivel where nivel = 'MP'`,
       );
@@ -147,7 +150,7 @@ describe('reimportar substitui, nunca soma (RF-05)', () => {
 
   it('reimportar o razão apaga o bloco anterior em vez de somar', async () => {
     for (const _ of [1, 2]) {
-      await comEmpresa(banco.db, empresaId, (tx) =>
+      await comEmpresa(banco.db, escopo, (tx) =>
         importarRazao(tx, { empresaId, origem: 'Sistema Contábil XYZ' }, lerRazao(RAZAO)),
       );
     }
@@ -156,7 +159,7 @@ describe('reimportar substitui, nunca soma (RF-05)', () => {
   });
 
   it('com o razão, o consumo e o custo de materiais passam a existir', async () => {
-    const linha = await banco.comoEmpresa(empresaId, async (pg) => {
+    const linha = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ origem: string; valor: string }>(
         'select custo_materiais_origem as origem, custo_materiais_valor as valor from periodo',
       );
@@ -170,12 +173,12 @@ describe('reimportar substitui, nunca soma (RF-05)', () => {
 
 describe('o valor informado não é apagado pela reimportação (ADR-0010)', () => {
   it('digitar o custo de materiais reapura só aquele período', async () => {
-    const resultado = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resultado = await comEmpresa(banco.db, escopo, (tx) =>
       salvarValorInformado(tx, { empresaId }, AGOSTO, 'custoMateriais', 1_600_000n),
     );
     expect(resultado.periodosReapurados).toBe(1);
 
-    const origem = await banco.comoEmpresa(empresaId, async (pg) => {
+    const origem = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ o: string; d: number }>(
         'select custo_materiais_origem as o, custo_materiais_divergencia as d from periodo',
       );
@@ -188,10 +191,10 @@ describe('o valor informado não é apagado pela reimportação (ADR-0010)', () 
   it('reimportar o balancete depois disso não apaga o que foi digitado', async () => {
     // É o bug que o ADR-0010 evita: a chave do RF-05 substitui, e o digitado
     // moraria na mesma linha se não tivesse tabela própria.
-    await comEmpresa(banco.db, empresaId, (tx) =>
+    await comEmpresa(banco.db, escopo, (tx) =>
       importarBalancete(tx, { empresaId, origem: 'Sistema Contábil XYZ' }, lerBalancete(balanceteDe('12.047,00'))),
     );
-    const origem = await banco.comoEmpresa(empresaId, async (pg) => {
+    const origem = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ o: string }>(
         'select custo_materiais_origem as o from periodo',
       );
@@ -202,7 +205,7 @@ describe('o valor informado não é apagado pela reimportação (ADR-0010)', () 
   });
 
   it('editar de novo versiona em vez de sobrescrever', async () => {
-    const resultado = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resultado = await comEmpresa(banco.db, escopo, (tx) =>
       salvarValorInformado(tx, { empresaId }, AGOSTO, 'custoMateriais', 1_840_000n),
     );
     expect(resultado.versao).toBe(2);
@@ -223,13 +226,13 @@ describe('o mapeamento versiona e recalcula', () => {
       ],
       niveisAusentes: ['PA'],
     };
-    const resultado = await comEmpresa(banco.db, empresaId, (tx) =>
+    const resultado = await comEmpresa(banco.db, escopo, (tx) =>
       salvarMapeamento(tx, { empresaId, motivo: 'PA passou a ser controlado fora' }, semPa),
     );
     expect(resultado.versao).toBe(2);
     expect(resultado.periodosReapurados).toBe(1);
 
-    const pa = await banco.comoEmpresa(empresaId, async (pg) => {
+    const pa = await banco.comoEmpresa(escopo, async (pg) => {
       const { rows } = await pg.query<{ e: string }>(
         `select estoque_estado as e from lancamento_nivel where nivel = 'PA'`,
       );
@@ -241,9 +244,44 @@ describe('o mapeamento versiona e recalcula', () => {
   });
 
   it('e continua sem deixar período defasado', async () => {
-    const defasados = await comEmpresa(banco.db, empresaId, (tx) =>
+    const defasados = await comEmpresa(banco.db, escopo, (tx) =>
       periodosDefasados(tx, empresaId),
     );
     expect(defasados).toEqual([]);
+  });
+});
+
+describe('a leitura passa pelo mesmo codec da escrita', () => {
+  it('devolve o Lançamento como o motor o consome, sem coluna crua', async () => {
+    const periodos = await comEmpresa(banco.db, escopo, (tx) => lancamentosDaEmpresa(tx, empresaId));
+    expect(periodos).toHaveLength(1);
+
+    const [agosto] = periodos;
+    if (agosto?.estado !== 'apurado') throw new Error('esperava apurado');
+    const { lancamento } = agosto;
+
+    // O estado atravessou: PA foi declarado ausente na última versão do mapeamento.
+    expect(lancamento.estoque.PA).toEqual({ estado: 'ausente' });
+    expect(lancamento.estoque.MP.estado).toBe('lido');
+    // E a origem do custo de materiais também: digitado e conferido contra o razão.
+    expect(lancamento.custoMateriais.origem).toBe('conferido');
+    expect(lancamento.cmv).toBe(2_450_000n);
+  });
+
+  it('um período só importado volta sem lançamento, com nome', async () => {
+    await comEmpresa(banco.db, escopo, (tx) =>
+      importarBalancete(
+        tx,
+        { empresaId, origem: 'Sistema Contábil XYZ' },
+        lerBalancete(latin1(
+          ['Período: 01/09/2025 a 30/09/2025', 'Classificação;Descrição;Saldo Atual', '9.9.9.99;SEM MAPEAMENTO;1,00'].join('\r\n'),
+        )),
+      ),
+    );
+    const periodos = await comEmpresa(banco.db, escopo, (tx) => lancamentosDaEmpresa(tx, empresaId));
+    const setembro = periodos.find((p) => p.estado === 'importado');
+    // Sem MP mapeada naquele arquivo, a validação recusa produzir número — e
+    // a leitura diz "importado", nunca inventa um lançamento vazio.
+    expect(setembro).toEqual({ estado: 'importado', competencia: { ano: 2025, mes: 9 } });
   });
 });
