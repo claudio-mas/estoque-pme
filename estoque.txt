@@ -11,5 +11,3 @@ Esse tipo de planejamento permite responder perguntas como: quanto dinheiro fica
 Nesse caso, o valor percebido tende a estar em reduzir perdas, evitar falta de insumos e dizer quanto comprar e produzir.
 
 Este sistema deve ser parametrizável, e oferecer cenários para o gestor.
-
-Quais informações ainda são necessárias para elaborar o PRD?
