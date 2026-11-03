@@ -1,15 +1,15 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Nivel } from '@estoque-pme/motor-calculo';
+import { Button, Icon, Notice } from '@/components/cloudscape';
 import { salvar } from './acoes';
 import type { EstadoDoMapeamento } from './acoes';
 import type { ContaNaTela, DecisaoDoFormulario } from './decisoes';
 import { ID_DA_CONTA } from '@/servidor/navegacao';
 
 const NIVEIS: readonly Nivel[] = ['MP', 'PP', 'PA'];
-
 const ROTULOS: Readonly<Record<DecisaoDoFormulario, string>> = {
   pendente: '— pendente —',
   ignorada: 'Ignorar esta conta',
@@ -22,139 +22,158 @@ const ROTULOS: Readonly<Record<DecisaoDoFormulario, string>> = {
   cmv: 'CMV',
   receita: 'Receita',
 };
-
 const INICIAL: EstadoDoMapeamento = { versao: null, periodosReapurados: 0, erros: [], avisos: [] };
 
+function rascunhoInicial(contas: readonly ContaNaTela[], ausentes: readonly Nivel[]) {
+  return {
+    decisoes: Object.fromEntries(contas.map((c) => [c.codigo, c.atual])) as Record<string, DecisaoDoFormulario>,
+    ausentes: [...ausentes],
+    motivo: '',
+  };
+}
+
 export function Formulario({
-  empresaId,
-  contas,
-  ausentes,
-  podeEscrever,
+  empresaId, contas, ausentes, podeEscrever, versaoAtual,
 }: {
   empresaId: string;
   contas: readonly ContaNaTela[];
   ausentes: readonly Nivel[];
   podeEscrever: boolean;
+  versaoAtual: number | null;
 }) {
   const [estado, agir, pendente] = useActionState(salvar, INICIAL);
+  const [rascunho, setRascunho] = useState(() => rascunhoInicial(contas, ausentes));
+  const [alterado, setAlterado] = useState(false);
+  const [versaoSincronizada, setVersaoSincronizada] = useState<number | null>(null);
   const router = useRouter();
-  const pendentes = contas.filter((c) => !c.coberta && (c.atual === 'pendente' || c.sugestao !== null)).length;
+  const atualizando = estado.versao !== null && versaoSincronizada !== estado.versao;
+  const bloqueado = pendente || atualizando || !podeEscrever;
+  const pendentes = contas.filter((c) => !c.coberta && (rascunho.decisoes[c.codigo] ?? c.atual) === 'pendente').length;
 
-  // Salvar reapura no servidor; as props desta tela são da renderização
-  // inicial. Sem o refresh, a conta recém-ignorada continuaria "pendente" na
-  // tela até um reload à mão — e o gestor não saberia se salvou.
   useEffect(() => {
     if (estado.versao !== null) router.refresh();
   }, [estado.versao, router]);
 
+  // Somente o sucesso deste formulário aceita uma nova base. Erros e refreshes
+  // comuns preservam as escolhas. Esperar as props evita sobrescrever o salvo
+  // com sugestões antigas e bloqueia edição durante essa pequena atualização.
+  useEffect(() => {
+    if (estado.versao === null || estado.versao === versaoSincronizada ||
+        (versaoAtual ?? 0) < estado.versao) return;
+    setRascunho(rascunhoInicial(contas, ausentes));
+    setAlterado(false);
+    setVersaoSincronizada(estado.versao);
+  }, [estado.versao, versaoAtual, versaoSincronizada, contas, ausentes]);
+
   return (
-    <form action={agir} className="flex flex-col gap-4">
+    <form action={agir} className="pme-mapeamento" aria-busy={pendente || atualizando}
+      // React solicita reset nativo após a action. Em select, ele pode restaurar
+      // a primeira opção mesmo com value controlado. A base é atualizada acima.
+      onReset={(evento) => evento.preventDefault()}>
       <input type="hidden" name="empresaId" value={empresaId} />
-
-      {estado.versao !== null ? (
-        <p className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-          Versão {estado.versao} salva. {estado.periodosReapurados} período(s) reapurado(s).
-        </p>
+      {estado.erros.length > 0 ? (
+        <div role="alert" className="pme-feedback pme-feedback--erro">
+          <Notice label="Não foi possível salvar">
+            <strong>Revise o mapeamento</strong>
+            <ul>{estado.erros.map((e) => <li key={e}>{e}</li>)}</ul>
+            <p>Suas escolhas foram mantidas. Corrija o conflito e tente novamente.</p>
+          </Notice>
+        </div>
       ) : null}
-      {estado.erros.map((e) => (
-        <p key={e} className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {e}
-        </p>
-      ))}
-      {estado.avisos.map((a) => (
-        <p key={a} className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {a}
-        </p>
-      ))}
+      {estado.versao !== null && !alterado ? (
+        <div role="status" className="pme-feedback pme-feedback--sucesso">
+          <Notice label="Mapeamento salvo">
+            <strong>Versão {estado.versao} salva.</strong> {estado.periodosReapurados} período(s) reapurado(s).
+          </Notice>
+        </div>
+      ) : null}
+      {estado.avisos.length > 0 ? (
+        <div className="pme-feedback pme-feedback--aviso">
+          <Notice label="Avisos do mapeamento"><ul>{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul></Notice>
+        </div>
+      ) : null}
+      {!podeEscrever ? (
+        <Notice label="Acesso de leitura">Seu papel nesta empresa é de leitura. As classificações podem ser consultadas.</Notice>
+      ) : null}
 
-      <fieldset className="flex flex-wrap items-center gap-4 rounded border border-stone-200 bg-white p-3 text-sm">
-        <legend className="px-1 text-xs uppercase tracking-wide text-stone-600">
-          Níveis que a empresa não movimenta
-        </legend>
-        {NIVEIS.map((n) => (
-          <label key={n} className="flex items-center gap-2">
-            <input type="checkbox" name="ausente" value={n} defaultChecked={ausentes.includes(n)} />
-            {n} ausente
-          </label>
-        ))}
-        <span className="text-xs text-stone-500">
-          Declarar ausente não basta se houver conta pendente com a cara do nível — ela precisa ser
-          ignorada.
-        </span>
-      </fieldset>
+      <fieldset disabled={bloqueado} className="pme-controles">
+        <legend className="cs-sr-only">Editar mapeamento de contas</legend>
+        <fieldset className="pme-niveis">
+          <legend>Níveis que a empresa não movimenta</legend>
+          <div className="pme-niveis-opcoes">
+            {NIVEIS.map((n) => (
+              <label key={n} className="pme-checkbox">
+                <input type="checkbox" name="ausente" value={n} checked={rascunho.ausentes.includes(n)}
+                  onChange={(e) => {
+                    const marcado = e.target.checked;
+                    setRascunho((r) => ({ ...r, ausentes: marcado ? [...r.ausentes, n] : r.ausentes.filter((v) => v !== n) }));
+                    setAlterado(true);
+                  }} />
+                {n} ausente
+              </label>
+            ))}
+          </div>
+          <p className="pme-ajuda">Declarar ausente não basta se houver conta pendente com a cara do nível — ela precisa ser ignorada.</p>
+        </fieldset>
 
-      <div className="overflow-x-auto rounded border border-stone-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-stone-100 text-left text-xs uppercase tracking-wide text-stone-600">
-            <tr>
-              <th className="px-3 py-2">Conta</th>
-              <th className="px-3 py-2">Descrição</th>
-              <th className="px-3 py-2">Papel</th>
-              <th className="px-3 py-2">Por quê</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contas.map((c) => (
-              <tr
-                key={c.codigo}
-                id={ID_DA_CONTA(c.codigo)}
-                className={`scroll-mt-4 border-t border-stone-200 target:bg-amber-50 ${c.sintetica ? 'text-stone-500' : ''}`}
-              >
-                <td className="px-3 py-2 font-mono text-xs" style={{ paddingLeft: `${0.75 + (c.grau - 1) * 0.75}rem` }}>
-                  {c.codigo}
-                </td>
-                <td className="px-3 py-2">
-                  {c.descricao}
+        <div className="pme-table-heading">
+          <div><h3>Classificação das contas</h3><p>{contas.length} contas no histórico da empresa</p></div>
+          <span className="pme-badge">{pendentes} pendente(s)</span>
+        </div>
+        <p className="pme-mobile-help">Deslize a tabela para escolher o papel de cada conta →</p>
+        <div className="pme-table-wrap" tabIndex={0} role="region" aria-label="Contas contábeis, tabela com rolagem horizontal">
+          <table className="pme-account-table">
+            <caption className="cs-sr-only">Papéis das contas e justificativas das propostas de classificação</caption>
+            <thead><tr>
+              <th scope="col">Conta</th><th scope="col">Descrição</th><th scope="col">Papel no modelo</th><th scope="col">Por quê</th>
+            </tr></thead>
+            <tbody>{contas.map((c) => (
+              <tr key={c.codigo} id={ID_DA_CONTA(c.codigo)} className={c.sintetica ? 'pme-sintetica' : undefined}>
+                <th scope="row" className="pme-account-code" style={{ paddingLeft: `${16 + Math.min(c.grau - 1, 4) * 8}px` }}>{c.codigo}</th>
+                <td><span className="pme-account-name">{c.descricao}</span>{c.sintetica ? <small className="pme-ajuda">Conta sintética</small> : null}
                   {c.coberta ? null : <input type="hidden" name={`n:${c.codigo}`} value={c.descricao} />}
                 </td>
-                <td className="px-3 py-2">
-                  {c.coberta ? (
-                    <span className="text-xs text-stone-400" title="Coberta por decisão acima ou abaixo dela; não se classifica.">
-                      coberta
-                    </span>
-                  ) : (
-                    <select
-                      name={`d:${c.codigo}`}
-                      defaultValue={c.atual}
-                      disabled={!podeEscrever}
-                      className={`rounded border px-2 py-1 ${c.atual === 'pendente' ? 'border-amber-400' : 'border-stone-300'}`}
-                    >
-                      {(Object.keys(ROTULOS) as DecisaoDoFormulario[]).map((d) => (
-                        <option key={d} value={d}>
-                          {ROTULOS[d]}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </td>
-                <td className="max-w-md px-3 py-2 text-xs text-stone-500">
-                  {c.sugestao ? `Proposto: ${c.sugestao.motivo}` : null}
-                  {c.incoerente ? <span className="text-amber-700">{c.incoerente}</span> : null}
+                <td>{c.coberta ? (
+                  <span className="pme-covered" title="Coberta por decisão acima ou abaixo dela; não se classifica."><Icon name="check" /> coberta</span>
+                ) : (
+                  <select name={`d:${c.codigo}`} className="pme-select" aria-label={`Papel da conta ${c.codigo}`}
+                    value={rascunho.decisoes[c.codigo] ?? c.atual}
+                    onChange={(e) => {
+                      const valor = e.target.value as DecisaoDoFormulario;
+                      setRascunho((r) => ({ ...r, decisoes: { ...r.decisoes, [c.codigo]: valor } }));
+                      setAlterado(true);
+                    }}>
+                    {(Object.keys(ROTULOS) as DecisaoDoFormulario[]).map((d) => <option key={d} value={d}>{ROTULOS[d]}</option>)}
+                  </select>
+                )}</td>
+                <td className="pme-account-reason">
+                  {c.sugestao ? <><span className="pme-proposta">Proposta</span><span>{c.sugestao.motivo}</span></> : null}
+                  {c.incoerente ? <span className="pme-text-warning">{c.incoerente}</span> : null}
+                  {!c.sugestao && !c.incoerente && !c.coberta ? <span className="pme-ajuda">{c.atual === 'pendente' ? 'Aguardando sua decisão' : 'Decisão salva pela empresa'}</span> : null}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            ))}</tbody>
+          </table>
+        </div>
+        <div className="pme-save">
+          <label className="pme-field">Motivo desta versão (opcional)
+            <input name="motivo" maxLength={200} className="pme-input" value={rascunho.motivo}
+              placeholder="Ex.: revisão do fechamento de agosto"
+              onChange={(e) => {
+                const motivo = e.target.value;
+                setRascunho((r) => ({ ...r, motivo }));
+                setAlterado(true);
+              }} />
+          </label>
+          <Button type="submit" variant="primary" icon="check" disabled={bloqueado}>
+            {pendente ? 'Salvando e reapurando…' : atualizando ? 'Atualizando…' : 'Salvar mapeamento'}
+          </Button>
+        </div>
+      </fieldset>
+      <div className="pme-save-note">
+        <span><Icon name="info" /> Salvar grava uma versão e reapura o histórico inteiro.</span>
+        <span className={alterado ? 'pme-unsaved' : 'pme-ajuda'}>{alterado ? 'Alterações no rascunho' : 'Mapeamento por empresa'}</span>
       </div>
-
-      <div className="flex flex-wrap items-end gap-3 rounded border border-stone-200 bg-white p-3">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          Motivo desta versão (opcional)
-          <input name="motivo" maxLength={200} className="rounded border border-stone-300 px-3 py-2" />
-        </label>
-        <button
-          type="submit"
-          disabled={pendente || !podeEscrever}
-          className="rounded bg-stone-900 px-3 py-2 text-white hover:bg-stone-700 disabled:opacity-50"
-        >
-          {pendente ? 'Salvando e reapurando…' : 'Salvar mapeamento'}
-        </button>
-      </div>
-      <p className="text-xs text-stone-500">
-        {pendentes > 0
-          ? `${pendentes} conta(s) com proposta ou pendência. Salvar grava uma versão e reapura o histórico inteiro.`
-          : 'Nenhuma pendência. Salvar grava uma versão nova mesmo assim.'}
-      </p>
     </form>
   );
 }

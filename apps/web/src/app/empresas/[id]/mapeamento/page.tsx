@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/cloudscape';
 import { contasDaEmpresa, mapeamentoCorrente } from '@estoque-pme/dados';
 import { MAPEAMENTO_VAZIO, proporMapeamento } from '@estoque-pme/mapeamento';
 import { naEmpresaOu404 } from '@/servidor/acesso';
@@ -50,19 +51,22 @@ export default async function Mapeamento({ params }: { params: Promise<{ id: str
 
   return (
     <section>
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-lg font-medium">Mapeamento de contas</h2>
-        <span className="text-xs text-stone-500">
+      <div className="pme-page-header">
+        <div>
+          <span className="pme-eyebrow">Dados / Mapeamento</span>
+          <h2>Mapeamento de contas</h2>
+          <p>Conecte seu plano de contas ao modelo de estoque. Revise as propostas e confirme a classificação.</p>
+        </div>
+        <span className="pme-badge">
           {versao === null ? 'nenhuma versão ainda' : `versão ${versao}`}
         </span>
       </div>
       {contas.length === 0 ? (
-        <p className="rounded border border-dashed border-stone-300 p-6 text-sm text-stone-600">
-          Nenhuma conta conhecida ainda. Importe um balancete primeiro — o mapeamento nasce das contas que
-          o arquivo revela.
-        </p>
+        <EmptyState title="Nenhuma conta conhecida ainda" description="Importe um balancete primeiro. O mapeamento nasce das contas que o arquivo revela." />
       ) : (
         <Formulario
+          key={id}
+          versaoAtual={versao}
           empresaId={id}
           contas={contas}
           ausentes={ausentes}

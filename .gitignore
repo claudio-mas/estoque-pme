@@ -10,3 +10,6 @@ coverage/
 # Estado local de ferramentas de agente
 .claude/
 .wolf/
+
+# Registro local de execução
+/work/
