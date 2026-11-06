@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const config: NextConfig = {
+  // O indicador flutuante cobre controles no rodapé da navegação móvel.
+  devIndicators: false,
   // Os pacotes do workspace exportam `src/index.ts` cru: o Next tem de compilá-los.
   transpilePackages: [
     '@estoque-pme/motor-calculo',
