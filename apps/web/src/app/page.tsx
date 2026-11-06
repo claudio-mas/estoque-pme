@@ -23,27 +23,27 @@ export default async function Inicio() {
       <header className="mb-8 flex items-baseline justify-between">
         <h1 className="text-2xl font-semibold">Suas empresas</h1>
         <form action={sair}>
-          <button type="submit" className="text-sm text-stone-600 underline">
+          <button type="submit" className="text-sm text-muted-foreground underline">
             Sair ({sessao.email})
           </button>
         </form>
       </header>
 
       {empresas.length === 0 ? (
-        <p className="rounded border border-dashed border-stone-300 p-6 text-sm text-stone-600">
+        <p className="rounded border border-dashed border-border p-6 text-sm text-muted-foreground">
           Nenhuma empresa ligada a este e-mail. O acesso é dado por quem já administra a
           empresa — peça a ele, ou, no primeiro cadastro, use o script de semente.
         </p>
       ) : (
-        <ul className="divide-y divide-stone-200 rounded border border-stone-200 bg-white">
+        <ul className="divide-y divide-border rounded border border-border bg-card">
           {empresas.map((v) => (
             <li key={v.empresaId}>
               <Link
                 href={`/empresas/${v.empresaId}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-stone-50"
+                className="flex items-center justify-between px-4 py-3 hover:bg-accent"
               >
                 <span>{v.nome}</span>
-                <span className="text-xs uppercase tracking-wide text-stone-500">{v.papel}</span>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">{v.papel}</span>
               </Link>
             </li>
           ))}

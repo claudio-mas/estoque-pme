@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { importar } from './acoes';
 import type { EstadoDaImportacao } from './acoes';
+import { Botao } from '@/components/ui/botao';
 
 /** ERPs que a PME brasileira de alimentos costuma rodar. Chute informado, a ser corrigido pelo D8. */
 const ERPS_CONHECIDOS = [
@@ -30,7 +31,7 @@ export function Formulario({
 
   return (
     <div className="flex flex-col gap-6">
-      <form action={agir} className="flex flex-col gap-4 rounded border border-stone-200 bg-white p-4">
+      <form action={agir} className="flex flex-col gap-4 rounded border border-border bg-card p-4">
         <input type="hidden" name="empresaId" value={empresaId} />
 
         <label className="flex flex-col gap-1 text-sm">
@@ -41,14 +42,14 @@ export function Formulario({
             required
             defaultValue={origemAnterior ?? ''}
             placeholder="O ERP que exportou os arquivos"
-            className="rounded border border-stone-300 px-3 py-2"
+            className="rounded border border-input bg-background px-3 py-2"
           />
           <datalist id="erps">
             {ERPS_CONHECIDOS.map((e) => (
               <option key={e} value={e} />
             ))}
           </datalist>
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-muted-foreground">
             Obrigatório na primeira importação. Fica registrado em cada arquivo importado.
           </span>
         </label>
@@ -61,30 +62,26 @@ export function Formulario({
             multiple
             required
             accept=".csv,.txt,.xlsx"
-            className="rounded border border-stone-300 px-3 py-2"
+            className="rounded border border-input bg-background px-3 py-2"
           />
-          <span className="text-xs text-stone-500">
+          <span className="text-xs text-muted-foreground">
             O produto descobre qual é qual pelo cabeçalho. Não é preciso separar.
           </span>
         </label>
 
-        <button
-          type="submit"
-          disabled={pendente || !podeEscrever}
-          className="self-start rounded bg-stone-900 px-3 py-2 text-white hover:bg-stone-700 disabled:opacity-50"
-        >
+        <Botao type="submit" disabled={pendente || !podeEscrever} className="self-start">
           {pendente ? 'Importando…' : 'Importar'}
-        </button>
+        </Botao>
         {!podeEscrever ? (
-          <p className="text-xs text-amber-700">Seu papel nesta empresa é de leitura.</p>
+          <p className="text-xs text-warning-subtle-foreground">Seu papel nesta empresa é de leitura.</p>
         ) : null}
       </form>
 
-      {estado.erro ? <p className="text-sm text-red-700">{estado.erro}</p> : null}
+      {estado.erro ? <p className="text-sm text-destructive-subtle-foreground">{estado.erro}</p> : null}
 
       {estado.resultados.length > 0 ? (
-        <table className="w-full rounded border border-stone-200 bg-white text-sm">
-          <thead className="bg-stone-100 text-left text-xs uppercase tracking-wide text-stone-600">
+        <table className="w-full rounded border border-border bg-card text-sm">
+          <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2">Arquivo</th>
               <th className="px-3 py-2">Artefato</th>
@@ -94,7 +91,7 @@ export function Formulario({
           </thead>
           <tbody>
             {estado.resultados.map((r) => (
-              <tr key={r.nome} className="border-t border-stone-200 align-top">
+              <tr key={r.nome} className="border-t border-border align-top">
                 <td className="px-3 py-2">{r.nome}</td>
                 <td className="px-3 py-2">{r.artefato ?? '—'}</td>
                 <td className="px-3 py-2">{r.competencia ?? '—'}</td>
@@ -107,7 +104,7 @@ export function Formulario({
                     </span>
                   ) : null}
                   {r.erros.map((e) => (
-                    <p key={e} className="text-red-700">
+                    <p key={e} className="text-destructive-subtle-foreground">
                       {e}
                     </p>
                   ))}

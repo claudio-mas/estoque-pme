@@ -61,7 +61,7 @@ The ingestion path is complete: ERP file → reader → mapping → lançamento 
 reimport.
 
 `apps/web` is the app — Next.js 16 App Router, Server Actions with Zod at the boundary, Auth.js v5 with
-**magic link and no password** (`docs/adr/0013`), Tailwind with the proprietary Cloudscape UI 1.1 component library (versioned package in vendor/). The current empresa
+**magic link and no password** (`docs/adr/0013`), Tailwind with the **informas-ui** design tokens and no component library (`docs/informas-ui.md`). The current empresa
 lives in the URL (`/empresas/[id]/…`), never in a cookie. **Every Server Action re-checks the vínculo** through
 `src/servidor/acesso.ts` (`naEmpresa`): the layout only decides whether a page opens; it is never what makes
 a write safe, because actions do not pass through layouts and the `empresaId` in a form is a field anyone can
@@ -70,10 +70,13 @@ seeded by the app itself; in production it is `node-postgres` on `DATABASE_URL`,
 `aplicacao` role's string, never the owner's. Empresas are created by `npm run semear`, not by the app: the
 `with check (true)` on `empresa_criacao` is a dated debt, to be revisited when self-signup exists.
 
-The empresa shell and mapping screen use Cloudscape UI; legacy content is migrated gradually.
-React components from the library cross the client boundary in src/components/cloudscape.tsx.
+Colors come only from informas-ui's semantic tokens (`bg-card`, `text-muted-foreground`, `border-input`,
+`text-warning-subtle-foreground`…), never from Tailwind's palette (`stone-*`, `amber-*`): that is what makes the
+light/dark themes and a future brand work. Dark mode is the `.dark` class on `<html>`, applied before paint by the
+script in `src/components/ui/tema.ts`. The few UI primitives (Botao, Aviso, Vazio, Icone, SeletorDeTema) live in
+`src/components/ui/` and have no hooks unless they need them, so Server Components can use them.
 Mapping decisions, absent levels and reason are controlled; errors preserve the draft. Browser regressions
-run with npm run test:e2e --workspace @estoque-pme/web on an isolated PGlite. See docs/cloudscape-ui.md.
+run with npm run test:e2e --workspace @estoque-pme/web on an isolated PGlite.
 
 Next.js 16 differs from older training data — `params` is a Promise, middleware is `proxy.ts`, caching is
 opt-in — so read `node_modules/next/dist/docs/` before writing app code; `apps/web/AGENTS.md` says the same.

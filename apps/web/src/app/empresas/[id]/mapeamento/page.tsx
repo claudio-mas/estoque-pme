@@ -1,4 +1,4 @@
-import { EmptyState } from '@/components/cloudscape';
+import { Vazio } from '@/components/ui/vazio';
 import { contasDaEmpresa, mapeamentoCorrente } from '@estoque-pme/dados';
 import { MAPEAMENTO_VAZIO, proporMapeamento } from '@estoque-pme/mapeamento';
 import { naEmpresaOu404 } from '@/servidor/acesso';
@@ -51,18 +51,18 @@ export default async function Mapeamento({ params }: { params: Promise<{ id: str
 
   return (
     <section>
-      <div className="pme-page-header">
+      <div className="mb-7 flex items-start justify-between gap-5 max-md:mb-5 max-md:flex-wrap max-md:gap-2.5">
         <div>
-          <span className="pme-eyebrow">Dados / Mapeamento</span>
-          <h2>Mapeamento de contas</h2>
-          <p>Conecte seu plano de contas ao modelo de estoque. Revise as propostas e confirme a classificação.</p>
+          <span className="block text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Dados / Mapeamento</span>
+          <h2 className="mb-2 mt-1.5 text-[28px] font-semibold leading-tight tracking-[-0.025em] max-md:text-2xl">Mapeamento de contas</h2>
+          <p className="max-w-[65ch] text-muted-foreground">Conecte seu plano de contas ao modelo de estoque. Revise as propostas e confirme a classificação.</p>
         </div>
-        <span className="pme-badge">
+        <span className="mt-[22px] inline-flex items-center whitespace-nowrap rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground max-md:mt-0">
           {versao === null ? 'nenhuma versão ainda' : `versão ${versao}`}
         </span>
       </div>
       {contas.length === 0 ? (
-        <EmptyState title="Nenhuma conta conhecida ainda" description="Importe um balancete primeiro. O mapeamento nasce das contas que o arquivo revela." />
+        <Vazio titulo="Nenhuma conta conhecida ainda" descricao="Importe um balancete primeiro. O mapeamento nasce das contas que o arquivo revela." />
       ) : (
         <Formulario
           key={id}

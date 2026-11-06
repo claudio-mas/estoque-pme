@@ -4,6 +4,7 @@ import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { informar } from './acoes';
 import type { EstadoDoInforme } from './acoes';
+import { Botao } from '@/components/ui/botao';
 
 const INICIAL: EstadoDoInforme = { versao: null, erro: null };
 
@@ -35,7 +36,7 @@ export function InformarCusto({
   }, [estado.versao, router]);
 
   return (
-    <form action={agir} className="flex flex-wrap items-end gap-3 rounded border border-stone-200 bg-white p-3 text-sm">
+    <form action={agir} className="flex flex-wrap items-end gap-3 rounded border border-border bg-card p-3 text-sm">
       <input type="hidden" name="empresaId" value={empresaId} />
       <input type="hidden" name="ano" value={ano} />
       <input type="hidden" name="mes" value={mes} />
@@ -47,22 +48,18 @@ export function InformarCusto({
           placeholder="18.500,00"
           defaultValue={atual ?? ''}
           disabled={!podeEscrever}
-          className="w-44 rounded border border-stone-300 px-3 py-2 text-right tabular-nums"
+          className="w-44 rounded border border-input bg-background px-3 py-2 text-right tabular-nums"
         />
       </label>
-      <button
-        type="submit"
-        disabled={pendente || !podeEscrever}
-        className="rounded bg-stone-900 px-3 py-2 text-white hover:bg-stone-700 disabled:opacity-50"
-      >
+      <Botao type="submit" disabled={pendente || !podeEscrever}>
         {pendente ? 'Gravando…' : 'Informar'}
-      </button>
-      <span className="text-xs text-stone-500">
+      </Botao>
+      <span className="text-xs text-muted-foreground">
         Só quando o razão não existe. Com os dois, prevalece o derivado e a divergência fica à vista (RF-29).
       </span>
-      {estado.erro ? <p className="w-full text-red-700">{estado.erro}</p> : null}
+      {estado.erro ? <p className="w-full text-destructive-subtle-foreground">{estado.erro}</p> : null}
       {estado.versao !== null ? (
-        <p className="w-full text-green-800">Versão {estado.versao} gravada; período reapurado.</p>
+        <p className="w-full text-success-subtle-foreground">Versão {estado.versao} gravada; período reapurado.</p>
       ) : null}
     </form>
   );

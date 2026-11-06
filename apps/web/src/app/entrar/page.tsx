@@ -1,4 +1,5 @@
 import { signIn } from '@/servidor/auth';
+import { Botao } from '@/components/ui/botao';
 
 /**
  * Entrar: um e-mail, um link.
@@ -23,7 +24,7 @@ export default async function Entrar({
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
       <header>
         <h1 className="text-2xl font-semibold">Estoque PME</h1>
-        <p className="mt-1 text-sm text-stone-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Informe seu e-mail. Você recebe um link de acesso — sem senha.
         </p>
       </header>
@@ -35,15 +36,12 @@ export default async function Entrar({
             name="email"
             required
             autoComplete="email"
-            className="rounded border border-stone-300 px-3 py-2"
+            className="rounded border border-input bg-background px-3 py-2"
           />
         </label>
-        <button
-          type="submit"
-          className="rounded bg-stone-900 px-3 py-2 text-white hover:bg-stone-700"
-        >
+        <Botao type="submit">
           Enviar link de acesso
-        </button>
+        </Botao>
       </form>
     </main>
   );
