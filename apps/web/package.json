@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && npm run contraste",
+    "contraste": "node scripts/informas-contrast.mjs",
     "semear": "tsx semear.mts",
     "test:e2e": "playwright test"
   },
@@ -20,7 +21,6 @@
     "@estoque-pme/mapeamento": "0.1.0",
     "@estoque-pme/motor-calculo": "0.1.0",
     "drizzle-orm": "^0.45.2",
-    "informas-ui": "https://github.com/claudio-mas/informas-ui/releases/download/v2.0.0-alpha.0/informas-ui-2.0.0-alpha.0.tgz",
     "next": "16.3.5",
     "next-auth": "5.0.0-beta.32",
     "nodemailer": "^7.0.0",

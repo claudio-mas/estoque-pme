@@ -1,12 +1,26 @@
 # informas-ui no Estoque PME
 
-O app usa os tokens do [informas-ui](https://github.com/claudio-mas/informas-ui) — a base neutra de design system — com Tailwind CSS v4. Não há biblioteca de componentes: os poucos componentes de interface são locais, em `apps/web/src/components/ui/`.
+O app usa os tokens do [informas-ui](https://github.com/claudio-mas/informas-ui) — a base neutra de design system — com Tailwind CSS v4, instalados pelo registro shadcn. Não há biblioteca de componentes: os poucos componentes de interface são locais, em `apps/web/src/components/ui/`.
 
 ## Como está ligado
 
-- Dependência de `@estoque-pme/web`, instalada do release no GitHub (`informas-ui-2.0.0-alpha.0.tgz`). `npm ci` baixa o arquivo; a integridade fica no `package-lock.json`.
-- `src/app/globals.css` importa `tailwindcss` e `informas-ui/theme.css`. Isso gera os utilitários dos tokens semânticos: `bg-background`, `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `border-border`, `border-input`, `bg-primary`/`text-primary-foreground`, `text-warning-subtle-foreground`, `bg-warning-subtle`, `text-destructive-subtle-foreground`, `text-success-subtle-foreground`, `text-info-subtle-foreground`…
-- Os cinzas são os neutros do informas-ui. Não há `brand.css` ainda; quando houver marca, ela entra num arquivo importado depois do tema e é validada com `npx informas-contrast src/app/brand.css`.
+O informas-ui é um **registro shadcn**: os itens são copiados para o projeto, e não há dependência npm.
+
+- `apps/web/components.json` declara o registro `@informas`, fixado na versão: `https://github.com/claudio-mas/informas-ui/releases/download/v2.0.0-alpha.1/{name}.json`.
+- `@informas/tema` escreveu em `src/app/globals.css` a variante `dark`, o `@theme inline`, o `:root`, o `.dark` (primitivas `--informas-*` e tokens semânticos) e o `@layer base`. Isso gera os utilitários `bg-background`, `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `border-border`, `border-input`, `bg-primary`/`text-primary-foreground`, `text-warning-subtle-foreground`, `bg-warning-subtle`, `text-destructive-subtle-foreground`, `text-success-subtle-foreground`, `text-info-subtle-foreground` e afins.
+- `@informas/contraste` copiou `scripts/informas-contrast.mjs`. `npm run contraste --workspace @estoque-pme/web` verifica os 78 pares no `globals.css`, e o `npm test` do app já roda essa verificação: contraste abaixo do mínimo reprova os testes.
+- Os cinzas são os neutros do informas-ui. Ainda não há marca. Quando houver, ela entra como um bloco `:root`/`.dark` **no fim** do `globals.css` (ver o README do informas-ui). Por ficar por último, vence na cascata e sobrevive às atualizações do tema.
+- O `@theme inline` tem linhas `--x: var(--x)` acrescentadas pelo CLI do shadcn. São inofensivas; não as "conserte" à mão, porque a próxima atualização as recria.
+
+## Atualizar o tema
+
+Troque a tag na URL do `components.json` e, em `apps/web`:
+
+```sh
+npx shadcn@latest add @informas/tema @informas/contraste --overwrite
+```
+
+Revise o diff do `globals.css`, consulte o CHANGELOG do informas-ui e rode `npm run typecheck`, `npm test`, o build e os testes de navegador.
 
 ## Regras
 
@@ -29,7 +43,7 @@ O shell da empresa (`src/components/estrutura-empresa.tsx`) tem topo, navegaçã
 
 ## Tema
 
-`.dark` no `<html>`, padrão do informas-ui e do shadcn/ui. O script de `tema.ts` entra no layout raiz com `next/script` (`beforeInteractive`): aplica a preferência antes da pintura, acompanha o sistema operacional no modo Sistema e sincroniza abas. A preferência fica em `localStorage`, chave `estoque-pme.aparencia`, valores `light`, `dark` ou `system`. São a chave e os valores da versão anterior, então a escolha de quem já usava o app foi mantida.
+`.dark` no `<html>`, padrão do informas-ui e do shadcn/ui. O script de `src/components/ui/tema.ts` entra no layout raiz com `next/script` (`beforeInteractive`): aplica a preferência antes da pintura, acompanha o sistema operacional no modo Sistema e sincroniza abas. A preferência fica em `localStorage`, chave `estoque-pme.aparencia`, valores `light`, `dark` ou `system`. São a chave e os valores da versão anterior, então a escolha de quem já usava o app foi mantida.
 
 ## Rascunho de mapeamento
 
@@ -44,8 +58,4 @@ npm run test:e2e --workspace @estoque-pme/web
 
 Cada execução provisiona um PGlite novo em `apps/web/.e2e/run-*/dados`, com usuários, empresas e sessões de teste; a autenticação Auth.js e o DAL são os reais. Cobrem: preservação do rascunho após erro, versões e reapuração, reimportação idempotente, leitor e 404 para outra empresa, redirecionamento sem sessão, tema persistido e tema do sistema, navegação móvel sem rolagem horizontal e contraste AA do botão primário nos dois temas. Capturas claro/escuro/celular ficam na pasta da execução.
 
-Uma captura tirada logo após `goto` pode gerar um aviso de hidratação em desenvolvimento: o Playwright injeta `caret-color: transparent` nos campos antes de o React hidratar. É artefato do teste, não do app.
-
-## Atualizar o informas-ui
-
-Troque a URL da dependência em `apps/web/package.json` pela do novo release, rode `npm install`, `npm run typecheck`, `npm test`, `npm run build --workspace @estoque-pme/web` e os testes de navegador. Mudanças de versão maior podem renomear tokens; consulte o CHANGELOG do informas-ui.
+As capturas usam `caret: 'initial'`. Sem isso, o Playwright injeta `caret-color: transparent` nos campos antes da hidratação, o Next acusa uma divergência e o selo de aviso dele cobre o seletor de tema no celular.
