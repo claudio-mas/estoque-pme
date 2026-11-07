@@ -90,6 +90,8 @@ test('leitor tem todos os campos bloqueados e empresa alheia permanece invisíve
   expect(resposta?.status()).toBe(404);
 });
 
+// caret: 'initial' — sem ele o Playwright injeta caret-color nos campos antes da hidratação, e o
+// aviso de hidratação do Next abre um selo que cobre o seletor de tema no celular.
 test('navegação e temas funcionam no desktop e no celular', async ({ page, context }) => {
   const dados = fixture();
   const erros: string[] = [];
@@ -103,7 +105,7 @@ test('navegação e temas funcionam no desktop e no celular', async ({ page, con
   await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.reload();
   await expect(page.locator('html')).toHaveClass(/\bdark\b/);
-  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-escuro.png'), fullPage: true });
+  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-escuro.png'), fullPage: true, caret: 'initial' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Abrir navegação', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Navegação principal' })).toBeVisible();
@@ -111,7 +113,7 @@ test('navegação e temas funcionam no desktop e no celular', async ({ page, con
   await page.getByRole('button', { name: 'Fechar navegação', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Abrir navegação', exact: true })).toBeFocused();
   await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
-  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-celular.png'), fullPage: true });
+  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-celular.png'), fullPage: true, caret: 'initial' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await tema.getByRole('button', { name: 'Sistema', exact: true }).click();
@@ -119,7 +121,7 @@ test('navegação e temas funcionam no desktop e no celular', async ({ page, con
   await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
-  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-claro.png'), fullPage: true });
+  await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-claro.png'), fullPage: true, caret: 'initial' });
   expect(erros).toEqual([]);
 });
 
