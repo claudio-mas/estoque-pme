@@ -1,4 +1,5 @@
-import { Vazio } from '@/components/ui/vazio';
+import { Badge } from '@/components/ui/badge';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { contasDaEmpresa, mapeamentoCorrente } from '@estoque-pme/dados';
 import { MAPEAMENTO_VAZIO, proporMapeamento } from '@estoque-pme/mapeamento';
 import { naEmpresaOu404 } from '@/servidor/acesso';
@@ -57,12 +58,17 @@ export default async function Mapeamento({ params }: { params: Promise<{ id: str
           <h2 className="mb-2 mt-1.5 text-[28px] font-semibold leading-tight tracking-[-0.025em] max-md:text-2xl">Mapeamento de contas</h2>
           <p className="max-w-[65ch] text-muted-foreground">Conecte seu plano de contas ao modelo de estoque. Revise as propostas e confirme a classificação.</p>
         </div>
-        <span className="mt-[22px] inline-flex items-center whitespace-nowrap rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground max-md:mt-0">
+        <Badge variant="outline" className="mt-[22px] max-md:mt-0">
           {versao === null ? 'nenhuma versão ainda' : `versão ${versao}`}
-        </span>
+        </Badge>
       </div>
       {contas.length === 0 ? (
-        <Vazio titulo="Nenhuma conta conhecida ainda" descricao="Importe um balancete primeiro. O mapeamento nasce das contas que o arquivo revela." />
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyTitle>Nenhuma conta conhecida ainda</EmptyTitle>
+            <EmptyDescription>Importe um balancete primeiro. O mapeamento nasce das contas que o arquivo revela.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <Formulario
           key={id}

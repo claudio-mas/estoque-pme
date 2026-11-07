@@ -1,5 +1,6 @@
 import { signIn } from '@/servidor/auth';
-import { Botao } from '@/components/ui/botao';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 /**
  * Entrar: um e-mail, um link.
@@ -31,17 +32,16 @@ export default async function Entrar({
       <form action={enviarLink} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           E-mail
-          <input
+          <Input
             type="email"
             name="email"
             required
             autoComplete="email"
-            className="rounded border border-input bg-background px-3 py-2"
           />
         </label>
-        <Botao type="submit">
+        <Button type="submit">
           Enviar link de acesso
-        </Botao>
+        </Button>
       </form>
     </main>
   );

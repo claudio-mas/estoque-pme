@@ -3,7 +3,8 @@
 import { useActionState } from 'react';
 import { importar } from './acoes';
 import type { EstadoDaImportacao } from './acoes';
-import { Botao } from '@/components/ui/botao';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 /** ERPs que a PME brasileira de alimentos costuma rodar. Chute informado, a ser corrigido pelo D8. */
 const ERPS_CONHECIDOS = [
@@ -36,13 +37,12 @@ export function Formulario({
 
         <label className="flex flex-col gap-1 text-sm">
           Sistema de origem
-          <input
+          <Input
             name="origem"
             list="erps"
             required
             defaultValue={origemAnterior ?? ''}
             placeholder="O ERP que exportou os arquivos"
-            className="rounded border border-input bg-background px-3 py-2"
           />
           <datalist id="erps">
             {ERPS_CONHECIDOS.map((e) => (
@@ -56,22 +56,21 @@ export function Formulario({
 
         <label className="flex flex-col gap-1 text-sm">
           Arquivos — balancetes e razões, CSV ou XLSX, quantos quiser
-          <input
+          <Input
             type="file"
             name="arquivos"
             multiple
             required
             accept=".csv,.txt,.xlsx"
-            className="rounded border border-input bg-background px-3 py-2"
           />
           <span className="text-xs text-muted-foreground">
             O produto descobre qual é qual pelo cabeçalho. Não é preciso separar.
           </span>
         </label>
 
-        <Botao type="submit" disabled={pendente || !podeEscrever} className="self-start">
+        <Button type="submit" disabled={pendente || !podeEscrever} className="self-start">
           {pendente ? 'Importando…' : 'Importar'}
-        </Botao>
+        </Button>
         {!podeEscrever ? (
           <p className="text-xs text-warning-subtle-foreground">Seu papel nesta empresa é de leitura.</p>
         ) : null}

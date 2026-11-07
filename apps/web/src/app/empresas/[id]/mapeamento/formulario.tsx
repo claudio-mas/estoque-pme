@@ -3,9 +3,12 @@
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Nivel } from '@estoque-pme/motor-calculo';
-import { Aviso } from '@/components/ui/aviso';
-import { Botao } from '@/components/ui/botao';
-import { Icone } from '@/components/ui/icone';
+import { CheckIcon, InfoIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { salvar } from './acoes';
 import type { EstadoDoMapeamento } from './acoes';
 import type { ContaNaTela, DecisaoDoFormulario } from './decisoes';
@@ -74,26 +77,32 @@ export function Formulario({
       onReset={(evento) => evento.preventDefault()}>
       <input type="hidden" name="empresaId" value={empresaId} />
       {estado.erros.length > 0 ? (
-        <div role="alert">
-          <Aviso tom="erro" rotulo="Não foi possível salvar">
-            <strong>Revise o mapeamento</strong>
-            <ul>{estado.erros.map((e) => <li key={e}>{e}</li>)}</ul>
-            <p>Suas escolhas foram mantidas. Corrija o conflito e tente novamente.</p>
-          </Aviso>
-        </div>
+        <Alert variant="destructive" aria-label="Não foi possível salvar">
+          <AlertTitle>Revise o mapeamento</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-[18px]">{estado.erros.map((e) => <li key={e}>{e}</li>)}</ul>
+            <p className="text-xs">Suas escolhas foram mantidas. Corrija o conflito e tente novamente.</p>
+          </AlertDescription>
+        </Alert>
       ) : null}
       {estado.versao !== null && !alterado ? (
-        <div role="status">
-          <Aviso tom="sucesso" rotulo="Mapeamento salvo">
-            <strong>Versão {estado.versao} salva.</strong> {estado.periodosReapurados} período(s) reapurado(s).
-          </Aviso>
-        </div>
+        <Alert variant="success" aria-label="Mapeamento salvo">
+          <CheckIcon />
+          <AlertTitle>Versão {estado.versao} salva.</AlertTitle>
+          <AlertDescription>{estado.periodosReapurados} período(s) reapurado(s).</AlertDescription>
+        </Alert>
       ) : null}
       {estado.avisos.length > 0 ? (
-        <Aviso tom="aviso" rotulo="Avisos do mapeamento"><ul>{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul></Aviso>
+        <Alert variant="warning" aria-label="Avisos do mapeamento">
+          <AlertTitle>Avisos do mapeamento</AlertTitle>
+          <AlertDescription><ul className="list-disc pl-[18px]">{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul></AlertDescription>
+        </Alert>
       ) : null}
       {!podeEscrever ? (
-        <Aviso rotulo="Acesso de leitura">Seu papel nesta empresa é de leitura. As classificações podem ser consultadas.</Aviso>
+        <Alert variant="info" role={undefined} aria-label="Acesso de leitura">
+          <InfoIcon />
+          <AlertDescription>Seu papel nesta empresa é de leitura. As classificações podem ser consultadas.</AlertDescription>
+        </Alert>
       ) : null}
 
       <fieldset disabled={bloqueado} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
@@ -118,7 +127,7 @@ export function Formulario({
 
         <div className="mt-1 flex items-center justify-between gap-4">
           <div><h3 className="mb-1 text-base font-semibold">Classificação das contas</h3><p className="text-xs text-muted-foreground">{contas.length} contas no histórico da empresa</p></div>
-          <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">{pendentes} pendente(s)</span>
+          <Badge variant="outline">{pendentes} pendente(s)</Badge>
         </div>
         <p className="hidden text-xs text-muted-foreground max-md:block">Deslize a tabela para escolher o papel de cada conta →</p>
         <div className="overflow-x-auto rounded-xl border border-border bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" tabIndex={0} role="region" aria-label="Contas contábeis, tabela com rolagem horizontal">
@@ -134,17 +143,17 @@ export function Formulario({
                   {c.coberta ? null : <input type="hidden" name={`n:${c.codigo}`} value={c.descricao} />}
                 </td>
                 <td>{c.coberta ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title="Coberta por decisão acima ou abaixo dela; não se classifica."><Icone nome="confere" className="size-3.5" /> coberta</span>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title="Coberta por decisão acima ou abaixo dela; não se classifica."><CheckIcon className="size-3.5" aria-hidden="true" /> coberta</span>
                 ) : (
-                  <select name={`d:${c.codigo}`} className="w-[190px] min-h-9 rounded-md border border-input bg-background px-2.5 py-[7px] text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60" aria-label={`Papel da conta ${c.codigo}`}
+                  <NativeSelect name={`d:${c.codigo}`} className="w-[190px]" aria-label={`Papel da conta ${c.codigo}`}
                     value={rascunho.decisoes[c.codigo] ?? c.atual}
                     onChange={(e) => {
                       const valor = e.target.value as DecisaoDoFormulario;
                       setRascunho((r) => ({ ...r, decisoes: { ...r.decisoes, [c.codigo]: valor } }));
                       setAlterado(true);
                     }}>
-                    {(Object.keys(ROTULOS) as DecisaoDoFormulario[]).map((d) => <option key={d} value={d}>{ROTULOS[d]}</option>)}
-                  </select>
+                    {(Object.keys(ROTULOS) as DecisaoDoFormulario[]).map((d) => <NativeSelectOption key={d} value={d}>{ROTULOS[d]}</NativeSelectOption>)}
+                  </NativeSelect>
                 )}</td>
                 <td className="min-w-[200px] max-w-[340px] text-xs leading-normal text-muted-foreground">
                   {c.sugestao ? <><span className="mb-0.5 block text-[11px] font-semibold text-info-subtle-foreground">Proposta</span><span>{c.sugestao.motivo}</span></> : null}
@@ -157,7 +166,7 @@ export function Formulario({
         </div>
         <div className="flex items-end gap-5 rounded-xl border border-border bg-card p-5 max-md:flex-col max-md:items-stretch max-md:gap-4 max-md:p-4">
           <label className="flex min-w-0 flex-1 flex-col gap-2 text-[13px] font-medium">Motivo desta versão (opcional)
-            <input name="motivo" maxLength={200} className="font-normal placeholder:text-muted-foreground min-h-9 rounded-md border border-input bg-background px-2.5 py-[7px] text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60" value={rascunho.motivo}
+            <Input name="motivo" maxLength={200} className="font-normal" value={rascunho.motivo}
               placeholder="Ex.: revisão do fechamento de agosto"
               onChange={(e) => {
                 const motivo = e.target.value;
@@ -165,13 +174,14 @@ export function Formulario({
                 setAlterado(true);
               }} />
           </label>
-          <Botao type="submit" icone="confere" disabled={bloqueado} className="max-md:min-h-[42px]">
+          <Button type="submit" disabled={bloqueado} className="max-md:min-h-[42px]">
+            <CheckIcon aria-hidden="true" />
             {pendente ? 'Salvando e reapurando…' : atualizando ? 'Atualizando…' : 'Salvar mapeamento'}
-          </Botao>
+          </Button>
         </div>
       </fieldset>
       <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 max-md:items-start"><Icone nome="info" className="size-3.5" /> Salvar grava uma versão e reapura o histórico inteiro.</span>
+        <span className="inline-flex items-center gap-1.5 max-md:items-start"><InfoIcon className="size-3.5" aria-hidden="true" /> Salvar grava uma versão e reapura o histórico inteiro.</span>
         <span className={alterado ? 'text-warning-subtle-foreground' : 'text-muted-foreground'}>{alterado ? 'Alterações no rascunho' : 'Mapeamento por empresa'}</span>
       </div>
     </form>

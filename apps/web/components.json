@@ -17,6 +17,6 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@informas": "https://github.com/claudio-mas/informas-ui/releases/download/v2.0.0-alpha.1/{name}.json"
+    "@informas": "https://github.com/claudio-mas/informas-ui/releases/download/v2.0.0-alpha.3/{name}.json"
   }
 }
