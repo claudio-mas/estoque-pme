@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Gerado pelo informas-ui 2.0.0-alpha.1 (item "contraste" do registro). Para atualizar: npx shadcn@latest add @informas/contraste
+// Gerado pelo informas-ui 2.0.0-alpha.3 (item "contraste" do registro). Para atualizar: npx shadcn@latest add @informas/contraste
 
 // scripts/registry/informas-contrast.mjs
 import { existsSync, readFileSync as readFileSync2 } from "node:fs";

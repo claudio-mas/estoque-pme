@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import { SCRIPT_DO_TEMA } from '@/components/ui/tema';
+import { themeScript } from '@/lib/theme-mode';
+import { CHAVE_DO_TEMA } from '@/lib/tema';
 
 export const metadata: Metadata = {
   title: 'Estoque PME',
@@ -14,7 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
-        <Script id="tema" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: SCRIPT_DO_TEMA }} />
+        <Script id="tema" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript(CHAVE_DO_TEMA) }} />
       </body>
     </html>
   );

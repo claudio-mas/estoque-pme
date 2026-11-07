@@ -61,7 +61,7 @@ The ingestion path is complete: ERP file → reader → mapping → lançamento 
 reimport.
 
 `apps/web` is the app — Next.js 16 App Router, Server Actions with Zod at the boundary, Auth.js v5 with
-**magic link and no password** (`docs/adr/0013`), Tailwind with the **informas-ui** design tokens, installed from its shadcn registry into `globals.css` (`apps/web/components.json`), and no component library (`docs/informas-ui.md`). The current empresa
+**magic link and no password** (`docs/adr/0013`), Tailwind with the **informas-ui** design tokens and components, installed from its shadcn registry (`apps/web/components.json`, `docs/informas-ui.md`). The current empresa
 lives in the URL (`/empresas/[id]/…`), never in a cookie. **Every Server Action re-checks the vínculo** through
 `src/servidor/acesso.ts` (`naEmpresa`): the layout only decides whether a page opens; it is never what makes
 a write safe, because actions do not pass through layouts and the `empresaId` in a form is a field anyone can
@@ -74,8 +74,9 @@ Colors come only from informas-ui's semantic tokens (`bg-card`, `text-muted-fore
 `text-warning-subtle-foreground`…), never from Tailwind's palette (`stone-*`, `amber-*`): that is what makes the
 light/dark themes and a future brand work. `npm test` in apps/web also runs `scripts/informas-contrast.mjs` (WCAG pairs
 on `globals.css`); a brand goes as a `:root`/`.dark` block at the end of `globals.css`. Dark mode is the `.dark` class on `<html>`, applied before paint by the
-script in `src/components/ui/tema.ts`. The few UI primitives (Botao, Aviso, Vazio, Icone, SeletorDeTema) live in
-`src/components/ui/` and have no hooks unless they need them, so Server Components can use them.
+script from `src/lib/theme-mode.ts`. UI components (Button, Alert, Badge, Empty, Input, NativeSelect, Sidebar…) come
+from the informas registry into `src/components/ui/` and `src/components/app-shell.tsx`; never edit them by hand
+(the next `shadcn add` overwrites them): adapt in app components such as `estrutura-empresa.tsx`.
 Mapping decisions, absent levels and reason are controlled; errors preserve the draft. Browser regressions
 run with npm run test:e2e --workspace @estoque-pme/web on an isolated PGlite.
 

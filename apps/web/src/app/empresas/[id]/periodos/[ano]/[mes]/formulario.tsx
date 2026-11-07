@@ -4,7 +4,8 @@ import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { informar } from './acoes';
 import type { EstadoDoInforme } from './acoes';
-import { Botao } from '@/components/ui/botao';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const INICIAL: EstadoDoInforme = { versao: null, erro: null };
 
@@ -42,18 +43,18 @@ export function InformarCusto({
       <input type="hidden" name="mes" value={mes} />
       <label className="flex flex-col gap-1">
         Custo de materiais informado (R$)
-        <input
+        <Input
           name="valor"
           inputMode="decimal"
           placeholder="18.500,00"
           defaultValue={atual ?? ''}
           disabled={!podeEscrever}
-          className="w-44 rounded border border-input bg-background px-3 py-2 text-right tabular-nums"
+          className="w-44 text-right tabular-nums"
         />
       </label>
-      <Botao type="submit" disabled={pendente || !podeEscrever}>
+      <Button type="submit" disabled={pendente || !podeEscrever}>
         {pendente ? 'Gravando…' : 'Informar'}
-      </Botao>
+      </Button>
       <span className="text-xs text-muted-foreground">
         Só quando o razão não existe. Com os dois, prevalece o derivado e a divergência fica à vista (RF-29).
       </span>

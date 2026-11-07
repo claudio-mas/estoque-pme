@@ -107,11 +107,17 @@ test('navegação e temas funcionam no desktop e no celular', async ({ page, con
   await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-escuro.png'), fullPage: true, caret: 'initial' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Abrir navegação', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Navegação principal' })).toBeVisible();
+  // Barra lateral do informas-ui (app-shell): no celular vira uma gaveta modal, que fecha com Esc
+  // e devolve o foco ao botão que a abriu.
+  const alternar = page.getByRole('button', { name: 'Alternar barra lateral', exact: true });
+  await alternar.click();
+  const gaveta = page.getByRole('dialog', { name: 'Barra lateral' });
+  await expect(gaveta).toBeVisible();
+  await expect(gaveta.getByRole('link', { name: 'Mapeamento', exact: true })).toHaveAttribute('aria-current', 'page');
   await tema.getByRole('button', { name: 'Claro', exact: true }).click();
-  await page.getByRole('button', { name: 'Fechar navegação', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Abrir navegação', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(gaveta).toHaveCount(0);
+  await expect(alternar).toBeFocused();
   await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
   await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-celular.png'), fullPage: true, caret: 'initial' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
