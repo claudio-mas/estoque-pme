@@ -17,20 +17,20 @@ const pct = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDi
  * apagaria a distinção que o modelo inteiro existe para manter.
  */
 function CelulaPme({ pme }: { pme: Pme | undefined }) {
-  if (pme === undefined) return <td className="px-3 py-2 text-stone-400">·</td>;
+  if (pme === undefined) return <td className="px-3 py-2 text-muted-foreground">·</td>;
   switch (pme.estado) {
     case 'calculado':
       return (
         <td className="px-3 py-2 text-right tabular-nums" title={`base: ${pme.base}`}>
           {dias.format(pme.dias)}
-          {pme.base === 'fechamento' ? <span className="text-stone-400"> *</span> : null}
+          {pme.base === 'fechamento' ? <span className="text-muted-foreground"> *</span> : null}
         </td>
       );
     case 'ausente':
-      return <td className="px-3 py-2 text-right text-stone-400">ausente</td>;
+      return <td className="px-3 py-2 text-right text-muted-foreground">ausente</td>;
     case 'indefinido':
       return (
-        <td className="px-3 py-2 text-right text-amber-700" title={mensagemDoMotivo(pme.motivo)}>
+        <td className="px-3 py-2 text-right text-warning-subtle-foreground" title={mensagemDoMotivo(pme.motivo)}>
           indefinido
         </td>
       );
@@ -38,11 +38,11 @@ function CelulaPme({ pme }: { pme: Pme | undefined }) {
 }
 
 function CelulaPerda({ perda }: { perda: Perda | undefined }) {
-  if (perda === undefined) return <td className="px-3 py-2 text-stone-400">·</td>;
+  if (perda === undefined) return <td className="px-3 py-2 text-muted-foreground">·</td>;
   return perda.estado === 'medido' ? (
     <td className="px-3 py-2 text-right tabular-nums">{pct.format(perda.taxa)}</td>
   ) : (
-    <td className="px-3 py-2 text-right text-stone-400">não medido</td>
+    <td className="px-3 py-2 text-right text-muted-foreground">não medido</td>
   );
 }
 
@@ -53,7 +53,7 @@ function Linha({ linha, base }: { linha: LinhaDaSerie; base: string }) {
 
   if (linha.estado === 'importado') {
     return (
-      <tr className="border-t border-stone-200 text-stone-500">
+      <tr className="border-t border-border text-muted-foreground">
         <td className="px-3 py-2">
           <Link href={href} className="hover:underline">{rotulo}</Link>
         </td>
@@ -65,7 +65,7 @@ function Linha({ linha, base }: { linha: LinhaDaSerie; base: string }) {
   }
 
   return (
-    <tr className="border-t border-stone-200">
+    <tr className="border-t border-border">
       <td className="px-3 py-2">
         <Link href={href} className="hover:underline">{rotulo}</Link>
       </td>
@@ -74,7 +74,7 @@ function Linha({ linha, base }: { linha: LinhaDaSerie; base: string }) {
         {linha.cobertura?.estado === 'calculado' ? (
           dias.format(linha.cobertura.dias)
         ) : (
-          <span className="text-amber-700" title={linha.cobertura ? mensagemDoMotivo(linha.cobertura.motivo) : ''}>
+          <span className="text-warning-subtle-foreground" title={linha.cobertura ? mensagemDoMotivo(linha.cobertura.motivo) : ''}>
             indefinida
           </span>
         )}
@@ -91,7 +91,7 @@ export default async function Periodos({ params }: { params: Promise<{ id: strin
 
   if (serie.length === 0) {
     return (
-      <p className="rounded border border-dashed border-stone-300 p-6 text-sm text-stone-600">
+      <p className="rounded border border-dashed border-border p-6 text-sm text-muted-foreground">
         Nenhum período ainda. <Link href={`${base}/importar`} className="underline">Importe o primeiro balancete</Link>.
       </p>
     );
@@ -100,9 +100,9 @@ export default async function Periodos({ params }: { params: Promise<{ id: strin
   return (
     <section>
       <h2 className="mb-3 text-lg font-medium">Períodos</h2>
-      <div className="overflow-x-auto rounded border border-stone-200 bg-white">
+      <div className="overflow-x-auto rounded border border-border bg-card">
         <table className="w-full text-sm">
-          <thead className="bg-stone-100 text-left text-xs uppercase tracking-wide text-stone-600">
+          <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-3 py-2">Competência</th>
               <th className="px-3 py-2 text-right">PME MP</th>
@@ -121,8 +121,8 @@ export default async function Periodos({ params }: { params: Promise<{ id: strin
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-stone-500">
-        Dias de consumo. <span className="text-stone-400">*</span> = calculado sobre o saldo de fechamento, por não haver saldo anterior (D5).
+      <p className="mt-2 text-xs text-muted-foreground">
+        Dias de consumo. <span className="text-muted-foreground">*</span> = calculado sobre o saldo de fechamento, por não haver saldo anterior (D5).
       </p>
     </section>
   );

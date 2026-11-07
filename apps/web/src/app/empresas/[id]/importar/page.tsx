@@ -30,9 +30,9 @@ export default async function Importar({ params }: { params: Promise<{ id: strin
 
       {historico.length > 0 ? (
         <div>
-          <h3 className="mb-2 text-sm font-medium text-stone-700">Importações anteriores</h3>
-          <table className="w-full rounded border border-stone-200 bg-white text-sm">
-            <thead className="bg-stone-100 text-left text-xs uppercase tracking-wide text-stone-600">
+          <h3 className="mb-2 text-sm font-medium text-foreground">Importações anteriores</h3>
+          <table className="w-full rounded border border-border bg-card text-sm">
+            <thead className="bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Quando</th>
                 <th className="px-3 py-2">Artefato</th>
@@ -43,7 +43,7 @@ export default async function Importar({ params }: { params: Promise<{ id: strin
             </thead>
             <tbody>
               {historico.map((i) => (
-                <tr key={i.id} className="border-t border-stone-200">
+                <tr key={i.id} className="border-t border-border">
                   <td className="px-3 py-2">{quando.format(i.em)}</td>
                   <td className="px-3 py-2">{i.artefato}</td>
                   <td className="px-3 py-2">

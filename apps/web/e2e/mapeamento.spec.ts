@@ -90,7 +90,7 @@ test('leitor tem todos os campos bloqueados e empresa alheia permanece invisíve
   expect(resposta?.status()).toBe(404);
 });
 
-test('navegação e temas Cloudscape funcionam no desktop e no celular', async ({ page, context }) => {
+test('navegação e temas funcionam no desktop e no celular', async ({ page, context }) => {
   const dados = fixture();
   const erros: string[] = [];
   page.on('pageerror', erro => erros.push(erro.message));
@@ -100,9 +100,9 @@ test('navegação e temas Cloudscape funcionam no desktop e no celular', async (
   await expect(page.getByRole('link', { name: 'Mapeamento', exact: true })).toHaveAttribute('aria-current', 'page');
   const tema = page.getByRole('group', { name: 'Tema da interface' });
   await tema.getByRole('button', { name: 'Escuro', exact: true }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-cs-theme', 'dark');
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-cs-theme', 'dark');
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-escuro.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Abrir navegação', exact: true }).click();
@@ -110,15 +110,15 @@ test('navegação e temas Cloudscape funcionam no desktop e no celular', async (
   await tema.getByRole('button', { name: 'Claro', exact: true }).click();
   await page.getByRole('button', { name: 'Fechar navegação', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Abrir navegação', exact: true })).toBeFocused();
-  await expect(page.locator('html')).toHaveAttribute('data-cs-theme', 'light');
+  await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
   await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-celular.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await tema.getByRole('button', { name: 'Sistema', exact: true }).click();
   await page.emulateMedia({ colorScheme: 'dark' });
-  await expect(page.locator('html')).toHaveAttribute('data-cs-theme', 'dark');
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/);
   await page.emulateMedia({ colorScheme: 'light' });
-  await expect(page.locator('html')).toHaveAttribute('data-cs-theme', 'light');
+  await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
   await page.screenshot({ path: join(process.env['ESTOQUE_E2E_DIR']!, 'mapeamento-claro.png'), fullPage: true });
   expect(erros).toEqual([]);
 });
@@ -130,10 +130,28 @@ test('sem sessão a página protegida leva ao login', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Enviar link de acesso' })).toBeVisible();
 });
 
-test('telas em migração mantêm contraste dos botões', async ({ page, context }) => {
+/** Razão de contraste WCAG entre o texto e o fundo computados de um botão. */
+async function contrasteDoBotao(page: Page, nome: string) {
+  return page.getByRole('button', { name: nome, exact: true }).evaluate((el) => {
+    const luz = (cor: string) => {
+      const [r, g, b] = (cor.match(/[\d.]+/g) ?? []).slice(0, 3).map((c) => {
+        const v = Number(c) / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const estilo = getComputedStyle(el);
+    const [a, b] = [luz(estilo.color), luz(estilo.backgroundColor)].sort((x, y) => y - x);
+    return (a! + 0.05) / (b! + 0.05);
+  });
+}
+
+test('botões primários mantêm contraste AA nos dois temas', async ({ page, context }) => {
   const dados = fixture();
   await autenticar(context, dados.tokenEditor);
   await page.goto('/empresas/' + dados.empresaId + '/importar');
-  const botao = page.getByRole('button', { name: 'Importar', exact: true });
-  await expect(botao).toHaveCSS('color', 'rgb(255, 255, 255)');
+  expect(await contrasteDoBotao(page, 'Importar')).toBeGreaterThanOrEqual(4.5);
+  await page.getByRole('group', { name: 'Tema da interface' }).getByRole('button', { name: 'Escuro', exact: true }).click();
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+  expect(await contrasteDoBotao(page, 'Importar')).toBeGreaterThanOrEqual(4.5);
 });
